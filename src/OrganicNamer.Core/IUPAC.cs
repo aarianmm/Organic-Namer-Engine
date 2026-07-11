@@ -28,8 +28,21 @@ namespace OrganicNamer.Core
         {
             this.spec = spec;
             this.atoms = atoms;
-            atoms.MergeFunctionalGroups(spec.merging);
             groups = atoms.Groups;
+
+            // Early exit: cyclic molecules (rings) — must be before FindEveryLongestPath
+            // which requires a non-empty ends array.
+            if (atoms.IsCyclic())
+            {
+                names = NameCyclicMolecule();
+                names = names.Distinct().ToArray();
+                suffixFormula = "";
+                suffixRoot = "";
+                return;
+            }
+
+            // Standard chain-based path (unchanged logic)
+            atoms.MergeFunctionalGroups(spec.merging);
             CheckGroups(groups); //make sure the binary file conatins info for all the groups in this molecule
             //naming
             List<List<int>> possibleChains = atoms.FindEveryLongestPath();
@@ -59,7 +72,6 @@ namespace OrganicNamer.Core
             }
             names = ConstructName();
             names = names.Distinct().ToArray();
-            // Names are now available in the public 'names' field
         }
         private string[] ConstructName()
         {
@@ -72,7 +84,10 @@ namespace OrganicNamer.Core
                 Dictionary<string, List<int>> prefixCarbons = FindPrefixCarbons(chain, branches);
                 Dictionary<string, List<int>> middleCarbons = FindMiddleCarbons(chain);
                 List<int> suffixCarbonsList = FindSuffixCarbons(chain);
-                Dictionary<string, List<int>> suffixCarbons = new Dictionary<string, List<int>> { { suffixRoot, suffixCarbonsList } };
+                // If no suffix groups are on this chain, suppress the suffix (the group is on a branch)
+                Dictionary<string, List<int>> suffixCarbons = (suffixCarbonsList.Count == 0 && suffixRoot != "")
+                    ? new Dictionary<string, List<int>> { { "", new List<int>() } }
+                    : new Dictionary<string, List<int>> { { suffixRoot, suffixCarbonsList } };
                 string prefixName = NameSegment(prefixCarbons);
                 string middleName = NameSegment(middleCarbons);
                 string suffixName = NameSegment(suffixCarbons);
@@ -86,10 +101,12 @@ namespace OrganicNamer.Core
             Regex vowels = new Regex(@"\|(.)(?=[^a-z]*[aeiouy])"); //optional vowel followed by vowel is removed
             Regex startDashes = new Regex(@"([a-z])(\d)");
             Regex endDashes = new Regex(@"(\d)([a-z])");
+            Regex parenthesisDashes = new Regex(@"(\d)(\()"); //digit before parenthesis needs a dash
             name = vowels.Replace(name, "");
             name = name.Replace("|", "");
             name = startDashes.Replace(name, (m) => m.Groups[1].Value + "-" + m.Groups[2].Value);
             name = endDashes.Replace(name, (m) => m.Groups[1].Value + "-" + m.Groups[2].Value);
+            name = parenthesisDashes.Replace(name, (m) => m.Groups[1].Value + "-" + m.Groups[2].Value);
             return name;
         }
         private List<(List<int> chain, List<List<int>> branches)> NarrowDownChainsByBranches(List<List<int>> chains)
@@ -190,6 +207,9 @@ namespace OrganicNamer.Core
             Dictionary<string, List<int>> prefixesAndIndexes = new Dictionary<string, List<int>>();
             foreach (FunctionalGroup group in groups)
             {
+                if (chain.IndexOf(group.MainIndex) == -1)
+                    continue; // skip groups on branch atoms — handled by BuildSubstituentName
+
                 string name = "";
                 int carbonNumber = chain.IndexOf(group.MainIndex) + 1; //carbon number is position in carbon chain
                 if (group.GroupFormula != suffixFormula) //group is not the suffix one, so belongs in the prefix
@@ -229,7 +249,7 @@ namespace OrganicNamer.Core
             foreach (List<int> branch in branches)
             {
                 int carbonNumber = chain.IndexOf(branch[0]) + 1;
-                string name = spec.alkylNames[branch.Count - 1] + "yl";
+                string name = BuildSubstituentName(branch);
                 if (prefixesAndIndexes.ContainsKey(name))
                 {
                     prefixesAndIndexes[name].Add(carbonNumber);
@@ -282,6 +302,9 @@ namespace OrganicNamer.Core
             List<int> indexes = new List<int>();
             foreach (FunctionalGroup group in groups)
             {
+                if (chain.IndexOf(group.MainIndex) == -1)
+                    continue; // skip groups on branch atoms
+
                 bool endsAreInvolved = suffixIsMiddle || suffixIsEnd;
                 bool groupAndSuffixAreMiddle = suffixIsMiddle && !atoms.IsAnEnd(group.MainIndex);
                 bool groupAndSuffixAreEnd = suffixIsEnd && atoms.IsAnEnd(group.MainIndex);
@@ -327,17 +350,191 @@ namespace OrganicNamer.Core
             {
                 for (int i = 1; i < branch.Count; i++)
                 {
-                    foreach (FunctionalGroup group in groups)
-                    {
-                        if (group.Involves(branch[i]) || atoms.AlkylCounter(branch[i]) > 2) //branches cannot contain groups, or other branches coming off them
-                        {
-                            return false;
-                        }
-                    }
+                    // Sub-branches off branches: not supported
+                    if (atoms.AlkylCounter(branch[i]) > 2)
+                        return false;
+
+                    // Groups on intermediate (non-tip) branch carbons: not supported
+                    bool isAtTip = (i == branch.Count - 1);
+                    if (!isAtTip && groups.Any(g => g.Involves(branch[i])))
+                        return false;
                 }
             }
             return true;
         }
+        // ── Phase 4: BuildSubstituentName ──────────────────────────────────────────
+        private string BuildSubstituentName(List<int> branch)
+        {
+            int tipIndex = branch[branch.Count - 1]; // last carbon in branch
+
+            // Check if the tip carbon carries a functional group
+            FunctionalGroup? tipGroup = groups.FirstOrDefault(g => g.Involves(tipIndex));
+
+            if (tipGroup == null)
+            {
+                // Pure alkyl: branch[0] is junction on main chain, so subtract 1
+                return spec.alkylNames[branch.Count - 1] + "yl";
+            }
+
+            // Tip has a group: build "(groupalkyl)" e.g. "(hydroxymethyl)"
+            string groupPrefix = "";
+            if (spec.prefixOrSuffix.ContainsKey(tipGroup.GroupFormula))
+                groupPrefix = spec.prefixOrSuffix[tipGroup.GroupFormula].prefix;
+            else if (spec.prefixOnly.ContainsKey(tipGroup.GroupFormula))
+                groupPrefix = spec.prefixOnly[tipGroup.GroupFormula];
+
+            string alkylPart = spec.alkylNames[branch.Count - 1] + "yl";
+            return "(" + FormatName(groupPrefix + alkylPart) + ")";
+        }
+
+        // ── Phase 1: Cyclic naming ─────────────────────────────────────────────────
+        private string[] NameCyclicMolecule()
+        {
+            List<int> ring = atoms.FindRing();
+            int ringSize = ring.Count;
+            string ringBaseName = "cyclo" + spec.alkylNames[ringSize];
+            string middleName = spec.middle[""].name; // "an|e" for alkane (from spec)
+
+            var substituents = atoms.GetRingSubstituents(ring);
+            HashSet<int> ringSet = new HashSet<int>(ring);
+
+            if (substituents.Count == 0)
+                return new[] { FormatName(ringBaseName + middleName) };
+
+            if (substituents.Count == 1)
+            {
+                // Single substituent: no locant needed (IUPAC convention)
+                string subName = GetSubstituentName(substituents[0].atomIndex, substituents[0].isCarbon, ringSet);
+                return new[] { FormatName(subName + ringBaseName + middleName) };
+            }
+
+            (int[] numbering, List<string> subNames) = FindBestRingNumbering(ring, substituents, ringSet);
+            string prefixName = BuildRingPrefixName(numbering, subNames);
+            return new[] { FormatName(prefixName + ringBaseName + middleName) };
+        }
+        private (int[] bestNumbering, List<string> subNames) FindBestRingNumbering(
+            List<int> ring,
+            List<(int ringPosition, int atomIndex, bool isCarbon)> substituents,
+            HashSet<int> ringSet)
+        {
+            int n = ring.Count;
+            int[]? bestLocants = null;
+            List<string>? bestNamesForComparison = null;
+            int bestStart = 0;
+            int bestDirection = 0;
+
+            for (int start = 0; start < n; start++)
+            {
+                for (int dir = 0; dir < 2; dir++) // 0 = forward, 1 = reverse
+                {
+                    var locantNamePairs = new List<(int locant, string name)>();
+                    foreach (var (ringPos, atomIdx, isCarbon) in substituents)
+                    {
+                        int locant = dir == 0
+                            ? ((ringPos - start + n) % n) + 1
+                            : ((start - ringPos + n) % n) + 1;
+                        string name = GetSubstituentName(atomIdx, isCarbon, ringSet);
+                        locantNamePairs.Add((locant, name));
+                    }
+
+                    locantNamePairs.Sort((a, b) => a.locant.CompareTo(b.locant));
+                    int[] locants = locantNamePairs.Select(p => p.locant).ToArray();
+                    List<string> nameList = locantNamePairs.Select(p => p.name).ToList();
+
+                    bool isBetter = false;
+                    if (bestLocants == null)
+                    {
+                        isBetter = true;
+                    }
+                    else
+                    {
+                        for (int i = 0; i < locants.Length; i++)
+                        {
+                            if (locants[i] < bestLocants[i]) { isBetter = true; break; }
+                            if (locants[i] > bestLocants[i]) break;
+                        }
+                        // Tiebreaker: alphabetical order of names at first difference
+                        if (!isBetter && locants.SequenceEqual(bestLocants))
+                        {
+                            for (int i = 0; i < nameList.Count; i++)
+                            {
+                                int cmp = string.Compare(nameList[i], bestNamesForComparison![i], StringComparison.Ordinal);
+                                if (cmp < 0) { isBetter = true; break; }
+                                if (cmp > 0) break;
+                            }
+                        }
+                    }
+
+                    if (isBetter)
+                    {
+                        bestLocants = locants;
+                        bestNamesForComparison = nameList;
+                        bestStart = start;
+                        bestDirection = dir;
+                    }
+                }
+            }
+
+            // Build final result aligned with substituents order
+            int[] numbering = new int[substituents.Count];
+            List<string> subNames = new List<string>();
+            for (int i = 0; i < substituents.Count; i++)
+            {
+                int ringPos = substituents[i].ringPosition;
+                numbering[i] = bestDirection == 0
+                    ? ((ringPos - bestStart + n) % n) + 1
+                    : ((bestStart - ringPos + n) % n) + 1;
+                subNames.Add(GetSubstituentName(substituents[i].atomIndex, substituents[i].isCarbon, ringSet));
+            }
+            return (numbering, subNames);
+        }
+        private string GetSubstituentName(int atomIndex, bool isCarbon, HashSet<int> ringSet)
+        {
+            if (!isCarbon)
+            {
+                // Direct heteroatom on ring (Cl, Br, F, I, OH via O, etc.)
+                string symbol = atoms.Atoms[atomIndex].Symbol;
+                string formula = "C-" + symbol;
+                if (spec.prefixOnly.ContainsKey(formula))
+                    return spec.prefixOnly[formula]; // "chloro", "bromo" etc.
+                if (spec.prefixOrSuffix.ContainsKey(formula))
+                    return spec.prefixOrSuffix[formula].prefix; // "hydroxy", "amino" etc.
+                return symbol.ToLower(); // fallback
+            }
+            int chainLength = CountSubstituentCarbons(atomIndex, ringSet);
+            return spec.alkylNames[chainLength] + "yl"; // "methyl", "ethyl" etc.
+        }
+        private string BuildRingPrefixName(int[] numbering, List<string> subNames)
+        {
+            Dictionary<string, List<int>> nameToLocants = new Dictionary<string, List<int>>();
+            for (int i = 0; i < numbering.Length; i++)
+            {
+                if (nameToLocants.ContainsKey(subNames[i]))
+                    nameToLocants[subNames[i]].Add(numbering[i]);
+                else
+                    nameToLocants[subNames[i]] = new List<int> { numbering[i] };
+            }
+            return NameSegment(nameToLocants);
+        }
+        private int CountSubstituentCarbons(int startIndex, HashSet<int> ringSet)
+        {
+            int count = 0;
+            HashSet<int> visited = new HashSet<int>(ringSet); // block ring atoms
+            CountCarbonsDFS(startIndex, visited, ref count);
+            return count;
+        }
+        private void CountCarbonsDFS(int current, HashSet<int> visited, ref int count)
+        {
+            if (atoms.Atoms[current].Name != "Carbon") return;
+            visited.Add(current);
+            count++;
+            foreach (int neighbour in atoms.AdjacentAtoms(current))
+            {
+                if (!visited.Contains(neighbour))
+                    CountCarbonsDFS(neighbour, visited, ref count);
+            }
+        }
+
         public static void DisplaySpecDebug(string fileName) //no purpose besides displaying the rules extracted from the specification file
         {
             namingSpec spec = LoadSpecification(fileName);
@@ -589,9 +786,15 @@ namespace OrganicNamer.Core
         }
         private void FindHighestPrioritySuffix()
         {
+            // Only consider groups on the main chain — exclude groups on branch atoms
+            HashSet<int> chainAtoms = new HashSet<int>(
+                allChainsAndBranches.SelectMany(cab => cab.chain));
+
             int maxPriority = -1;
             foreach (FunctionalGroup fg in groups)
             {
+                if (!chainAtoms.Contains(fg.MainIndex))
+                    continue;
                 int currentPriority;
                 if (spec.prefixOrSuffix.ContainsKey(fg.GroupFormula))
                 {

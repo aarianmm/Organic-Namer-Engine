@@ -1,0 +1,19 @@
+{
+  "atoms": [
+    {"element":"C","bonds":[{"to":1,"order":1},{"to":5,"order":1},{"to":6,"order":1},{"to":7,"order":1}]},
+    {"element":"C","bonds":[{"to":0,"order":1},{"to":2,"order":1},{"to":8,"order":1},{"to":9,"order":1}]},
+    {"element":"C","bonds":[{"to":1,"order":1},{"to":3,"order":1},{"to":10,"order":1},{"to":11,"order":1}]},
+    {"element":"C","bonds":[{"to":2,"order":1},{"to":4,"order":1},{"to":12,"order":1},{"to":13,"order":1}]},
+    {"element":"C","bonds":[{"to":3,"order":1},{"to":5,"order":1},{"to":14,"order":1},{"to":15,"order":1}]},
+    {"element":"C","bonds":[{"to":4,"order":1},{"to":0,"order":1},{"to":16,"order":1},{"to":17,"order":1}]},
+    {"element":"C","bonds":[{"to":0,"order":1},{"to":18,"order":1},{"to":19,"order":1},{"to":20,"order":1}]},
+    {"element":"H","bonds":[{"to":0,"order":1}]},
+    {"element":"H","bonds":[{"to":1,"order":1}]},{"element":"H","bonds":[{"to":1,"order":1}]},
+    {"element":"H","bonds":[{"to":2,"order":1}]},{"element":"H","bonds":[{"to":2,"order":1}]},
+    {"element":"H","bonds":[{"to":3,"order":1}]},{"element":"H","bonds":[{"to":3,"order":1}]},
+    {"element":"H","bonds":[{"to":4,"order":1}]},{"element":"H","bonds":[{"to":4,"order":1}]},
+    {"element":"H","bonds":[{"to":5,"order":1}]},{"element":"H","bonds":[{"to":5,"order":1}]},
+    {"element":"H","bonds":[{"to":6,"order":1}]},{"element":"H","bonds":[{"to":6,"order":1}]},{"element":"H","bonds":[{"to":6,"order":1}]}
+  ],
+  "specificationSet": "AllGroups"
+}
