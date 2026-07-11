@@ -29,6 +29,47 @@
             public int Order { get; set; }
         }
 
+        // Fills in missing hydrogen atoms based on each element's valency deficit.
+        // For every atom where sum(bond orders) < valency, the required H atoms are appended.
+        // Safe to call on molecules that already have explicit H atoms — those atoms
+        // already have full valency so no extra H is added.
+        public static List<AtomInput> FillImplicitHydrogens(
+            List<AtomInput> atoms,
+            Dictionary<string, (string name, int valency)> periodicTable)
+        {
+            // Clone the list so we never mutate the caller's data
+            var result = atoms.Select(a => new AtomInput
+            {
+                Element = a.Element,
+                Bonds = a.Bonds.Select(b => new BondInput { To = b.To, Order = b.Order }).ToList()
+            }).ToList();
+
+            int nextIndex = result.Count;
+            var newHydrogens = new List<AtomInput>();
+
+            for (int i = 0; i < result.Count; i++)
+            {
+                if (!periodicTable.ContainsKey(result[i].Element)) continue;
+                int valency = periodicTable[result[i].Element].valency;
+                int usedValency = result[i].Bonds.Sum(b => b.Order);
+                int missingH = valency - usedValency;
+
+                for (int h = 0; h < missingH; h++)
+                {
+                    result[i].Bonds.Add(new BondInput { To = nextIndex, Order = 1 });
+                    newHydrogens.Add(new AtomInput
+                    {
+                        Element = "H",
+                        Bonds = new List<BondInput> { new BondInput { To = i, Order = 1 } }
+                    });
+                    nextIndex++;
+                }
+            }
+
+            result.AddRange(newHydrogens);
+            return result;
+        }
+
         // Static method to build ElementGraph from JSON atoms
         public static ElementGraph FromJsonAtoms(
             List<AtomInput> atoms,
@@ -117,9 +158,97 @@
             }
             if (ends.Count == 0)
             {
+                if (IsCyclic())
+                    return Array.Empty<int>(); // signal to IUPAC: this is a ring, not an error
                 throw new Exception("The molecule seems to have no ends");
             }
             return ends.ToArray();
+        }
+        public bool IsCyclic()
+        {
+            HashSet<int> visited = new HashSet<int>();
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                if (atoms[i].Name == "Carbon" && !visited.Contains(i))
+                {
+                    if (HasCycleDFS(i, -1, visited))
+                        return true;
+                }
+            }
+            return false;
+        }
+        private bool HasCycleDFS(int current, int parent, HashSet<int> visited)
+        {
+            visited.Add(current);
+            foreach (int neighbour in AdjacentAtoms(current).Where(n => atoms[n].Name == "Carbon"))
+            {
+                if (!visited.Contains(neighbour))
+                {
+                    if (HasCycleDFS(neighbour, current, visited))
+                        return true;
+                }
+                else if (neighbour != parent)
+                {
+                    return true; // back-edge found → cycle
+                }
+            }
+            return false;
+        }
+        public List<int> FindRing()
+        {
+            // Use a carbon with exactly 2 C-neighbours (pure ring carbon) as anchor
+            int ringCarbon = -1;
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                if (atoms[i].Name == "Carbon" && AlkylCounter(i) == 2)
+                {
+                    ringCarbon = i;
+                    break;
+                }
+            }
+            if (ringCarbon == -1) // fallback: all ring carbons have substituents
+            {
+                for (int i = 0; i < atoms.Count; i++)
+                {
+                    if (atoms[i].Name == "Carbon" && AlkylCounter(i) >= 2)
+                    {
+                        ringCarbon = i;
+                        break;
+                    }
+                }
+            }
+            int[] carbonNeighbours = AdjacentAtoms(ringCarbon)
+                .Where(n => atoms[n].Name == "Carbon").ToArray();
+            int c1 = carbonNeighbours[0];
+            int c2 = carbonNeighbours[1];
+            List<int> partialRing = FindPathBlocking(c1, c2, ringCarbon);
+            partialRing.Insert(0, ringCarbon);
+            return partialRing;
+        }
+        public List<int> FindPathBlocking(int start, int end, int blocked)
+        {
+            List<int> path = new List<int>();
+            HashSet<int> visited = new HashSet<int> { blocked }; // pre-seed blocked node
+            FindPathRecursive(start, end, ref visited, ref path);
+            return path;
+        }
+        public List<(int ringPosition, int atomIndex, bool isCarbon)> GetRingSubstituents(List<int> ring)
+        {
+            var result = new List<(int, int, bool)>();
+            HashSet<int> ringSet = new HashSet<int>(ring);
+            for (int pos = 0; pos < ring.Count; pos++)
+            {
+                int ringC = ring[pos];
+                foreach (int neighbour in AdjacentAtoms(ringC))
+                {
+                    if (!ringSet.Contains(neighbour))
+                    {
+                        bool isCarbon = atoms[neighbour].Name == "Carbon";
+                        result.Add((pos, neighbour, isCarbon));
+                    }
+                }
+            }
+            return result;
         }
         public List<List<int>> FindBranches(List<int> path)
         {
