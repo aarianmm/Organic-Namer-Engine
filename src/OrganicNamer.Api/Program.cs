@@ -22,7 +22,8 @@ app.MapPost("/api/name", (MoleculeRequest request) =>
             _              => SpecificationData.AllGroups
         };
 
-        var graph = ElementGraph.FromJsonAtoms(request.Atoms, SpecificationData.PeriodicTable);
+        var filledAtoms = ElementGraph.FillImplicitHydrogens(request.Atoms, SpecificationData.PeriodicTable);
+        var graph = ElementGraph.FromJsonAtoms(filledAtoms, SpecificationData.PeriodicTable);
         var namer = new IUPAC(spec, graph);
 
         return Results.Ok(new MoleculeResponse { Names = namer.names.ToList() });

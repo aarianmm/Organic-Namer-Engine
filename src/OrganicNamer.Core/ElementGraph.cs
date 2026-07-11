@@ -29,6 +29,47 @@
             public int Order { get; set; }
         }
 
+        // Fills in missing hydrogen atoms based on each element's valency deficit.
+        // For every atom where sum(bond orders) < valency, the required H atoms are appended.
+        // Safe to call on molecules that already have explicit H atoms — those atoms
+        // already have full valency so no extra H is added.
+        public static List<AtomInput> FillImplicitHydrogens(
+            List<AtomInput> atoms,
+            Dictionary<string, (string name, int valency)> periodicTable)
+        {
+            // Clone the list so we never mutate the caller's data
+            var result = atoms.Select(a => new AtomInput
+            {
+                Element = a.Element,
+                Bonds = a.Bonds.Select(b => new BondInput { To = b.To, Order = b.Order }).ToList()
+            }).ToList();
+
+            int nextIndex = result.Count;
+            var newHydrogens = new List<AtomInput>();
+
+            for (int i = 0; i < result.Count; i++)
+            {
+                if (!periodicTable.ContainsKey(result[i].Element)) continue;
+                int valency = periodicTable[result[i].Element].valency;
+                int usedValency = result[i].Bonds.Sum(b => b.Order);
+                int missingH = valency - usedValency;
+
+                for (int h = 0; h < missingH; h++)
+                {
+                    result[i].Bonds.Add(new BondInput { To = nextIndex, Order = 1 });
+                    newHydrogens.Add(new AtomInput
+                    {
+                        Element = "H",
+                        Bonds = new List<BondInput> { new BondInput { To = i, Order = 1 } }
+                    });
+                    nextIndex++;
+                }
+            }
+
+            result.AddRange(newHydrogens);
+            return result;
+        }
+
         // Static method to build ElementGraph from JSON atoms
         public static ElementGraph FromJsonAtoms(
             List<AtomInput> atoms,
