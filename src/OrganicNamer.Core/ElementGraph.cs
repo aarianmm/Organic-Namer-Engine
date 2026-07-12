@@ -196,34 +196,25 @@
         }
         public List<int> FindRing()
         {
-            // Use a carbon with exactly 2 C-neighbours (pure ring carbon) as anchor
-            int ringCarbon = -1;
             for (int i = 0; i < atoms.Count; i++)
             {
-                if (atoms[i].Name == "Carbon" && AlkylCounter(i) == 2)
+                if (atoms[i].Name != "Carbon" || AlkylCounter(i) < 2)
+                    continue;
+                int[] cn = AdjacentAtoms(i).Where(n => atoms[n].Name == "Carbon").ToArray();
+                for (int a = 0; a < cn.Length; a++)
                 {
-                    ringCarbon = i;
-                    break;
-                }
-            }
-            if (ringCarbon == -1) // fallback: all ring carbons have substituents
-            {
-                for (int i = 0; i < atoms.Count; i++)
-                {
-                    if (atoms[i].Name == "Carbon" && AlkylCounter(i) >= 2)
+                    for (int b = a + 1; b < cn.Length; b++)
                     {
-                        ringCarbon = i;
-                        break;
+                        List<int> partial = FindPathBlocking(cn[a], cn[b], i);
+                        if (partial.Count > 0 && partial[partial.Count - 1] == cn[b]) // path really reached cn[b]
+                        {
+                            partial.Insert(0, i);
+                            return partial;
+                        }
                     }
                 }
             }
-            int[] carbonNeighbours = AdjacentAtoms(ringCarbon)
-                .Where(n => atoms[n].Name == "Carbon").ToArray();
-            int c1 = carbonNeighbours[0];
-            int c2 = carbonNeighbours[1];
-            List<int> partialRing = FindPathBlocking(c1, c2, ringCarbon);
-            partialRing.Insert(0, ringCarbon);
-            return partialRing;
+            throw new Exception("Cycle detected but no ring could be extracted");
         }
         public List<int> FindPathBlocking(int start, int end, int blocked)
         {
@@ -249,6 +240,51 @@
                 }
             }
             return result;
+        }
+        public bool IsAromatic(List<int> ring)
+        {
+            if (ring.Count != 6) return false;
+
+            // All ring atoms must be carbon
+            if (ring.Any(i => atoms[i].Name != "Carbon")) return false;
+
+            // Check for alternating bond orders around the ring
+            // Try both starting patterns (1,2,1,2,1,2 and 2,1,2,1,2,1)
+            for (int startOrder = 1; startOrder <= 2; startOrder++)
+            {
+                bool matches = true;
+                for (int i = 0; i < 6; i++)
+                {
+                    int expectedOrder = (i % 2 == 0) ? startOrder : (3 - startOrder);
+                    int actualOrder = BondOrder(ring[i], ring[(i + 1) % 6]);
+                    if (actualOrder != expectedOrder)
+                    {
+                        matches = false;
+                        break;
+                    }
+                }
+                if (matches) return true;
+            }
+            return false;
+        }
+        public List<int> CollectReachable(int start, HashSet<int> blocked)
+        {
+            List<int> result = new List<int>();
+            HashSet<int> visited = new HashSet<int>(blocked);
+            CollectReachableDFS(start, visited, result);
+            return result; // result[0] == start — guaranteed by DFS order; callers rely on this
+        }
+        private void CollectReachableDFS(int current, HashSet<int> visited, List<int> result)
+        {
+            visited.Add(current);
+            result.Add(current);
+            foreach (int neighbour in AdjacentAtoms(current))
+            {
+                if (!visited.Contains(neighbour))
+                {
+                    CollectReachableDFS(neighbour, visited, result);
+                }
+            }
         }
         public List<List<int>> FindBranches(List<int> path)
         {
