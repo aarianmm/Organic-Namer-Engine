@@ -391,12 +391,21 @@ namespace OrganicNamer.Core
         private string[] NameCyclicMolecule()
         {
             List<int> ring = atoms.FindRing();
+
+            if (atoms.IsAromatic(ring))
+                return NameAromaticMolecule(ring);
+
+            HashSet<int> ringSet = new HashSet<int>(ring);
+            if (groups.Any(g => g is CarbonCarbonGroup cc
+                && ringSet.Contains(cc.MainIndex) && ringSet.Contains(cc.OtherCarbonIndex)))
+                throw new Exception("Non-aromatic rings containing double or triple bonds are not supported");
+
             int ringSize = ring.Count;
             string ringBaseName = "cyclo" + spec.alkylNames[ringSize];
             string middleName = spec.middle[""].name; // "an|e" for alkane (from spec)
 
             var substituents = atoms.GetRingSubstituents(ring);
-            HashSet<int> ringSet = new HashSet<int>(ring);
+            ValidateRingSubstituents(ring, substituents);
 
             if (substituents.Count == 0)
                 return new[] { FormatName(ringBaseName + middleName) };
@@ -411,6 +420,63 @@ namespace OrganicNamer.Core
             (int[] numbering, List<string> subNames) = FindBestRingNumbering(ring, substituents, ringSet);
             string prefixName = BuildRingPrefixName(numbering, subNames);
             return new[] { FormatName(prefixName + ringBaseName + middleName) };
+        }
+        // ── Phase 2: Aromatic naming ───────────────────────────────────────────────
+        private string[] NameAromaticMolecule(List<int> ring)
+        {
+            HashSet<int> ringSet = new HashSet<int>(ring);
+            var substituents = atoms.GetRingSubstituents(ring);
+            ValidateRingSubstituents(ring, substituents);
+
+            if (substituents.Count == 0)
+                return new[] { "benzene" };
+
+            // Enforce scope limit: ≤2 substituents
+            if (substituents.Count > 2)
+                throw new Exception("Benzene with more than 2 substituents is not supported");
+
+            if (substituents.Count == 1)
+            {
+                string subName = GetSubstituentName(substituents[0].atomIndex, substituents[0].isCarbon, ringSet);
+                // Single substituent: no locant needed
+                return new[] { FormatName(subName + "benzene") };
+                // e.g. "chlorobenzene", "methylbenzene"
+            }
+
+            // 2 substituents: number to give lowest locants
+            (int[] numbering, List<string> subNames) = FindBestRingNumbering(ring, substituents, ringSet);
+            string prefixName = BuildRingPrefixName(numbering, subNames);
+            return new[] { FormatName(prefixName + "benzene") };
+        }
+        // ── Phase 2: Shared ring-substituent validation ────────────────────────────
+        private void ValidateRingSubstituents(
+            List<int> ring,
+            List<(int ringPosition, int atomIndex, bool isCarbon)> substituents)
+        {
+            HashSet<int> ringSet = new HashSet<int>(ring);
+            foreach (var (ringPos, atomIdx, isCarbon) in substituents)
+            {
+                if (!isCarbon)
+                {
+                    // A heteroatom attached by a multiple bond (cyclohexanone's =O) would be
+                    // looked up under the single-bond formula ("C-O" → hydroxy) — reject instead.
+                    if (atoms.BondOrder(ring[ringPos], atomIdx) != 1)
+                        throw new Exception("Ring substituents attached by a multiple bond are not supported");
+                    continue;
+                }
+
+                // Carbon substituents must be plain, unbranched alkyl chains.
+                List<int> subAtoms = atoms.CollectReachable(atomIdx, ringSet);
+                foreach (int a in subAtoms)
+                {
+                    if (atoms.Atoms[a].Name != "Carbon" || groups.Any(g => g.Involves(a)))
+                        throw new Exception("Ring substituents carrying functional groups are not supported");
+                    if (atoms.AlkylCounter(a) > 2)
+                        throw new Exception("Branched ring substituents are not supported");
+                    if (a != atomIdx && atoms.AdjacentAtoms(a).Any(n => ringSet.Contains(n)))
+                        throw new Exception("Fused or bridged ring systems are not supported");
+                }
+            }
         }
         private (int[] bestNumbering, List<string> subNames) FindBestRingNumbering(
             List<int> ring,
@@ -437,7 +503,9 @@ namespace OrganicNamer.Core
                         locantNamePairs.Add((locant, name));
                     }
 
-                    locantNamePairs.Sort((a, b) => a.locant.CompareTo(b.locant));
+                    locantNamePairs.Sort((a, b) => a.locant != b.locant
+                        ? a.locant.CompareTo(b.locant)
+                        : string.Compare(a.name, b.name, StringComparison.Ordinal));
                     int[] locants = locantNamePairs.Select(p => p.locant).ToArray();
                     List<string> nameList = locantNamePairs.Select(p => p.name).ToList();
 
