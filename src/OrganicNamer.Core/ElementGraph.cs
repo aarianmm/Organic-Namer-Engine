@@ -286,6 +286,45 @@
                 }
             }
         }
+        public List<int> GetBridgingAtoms()
+        {
+            // FindGroups() already detects chain-breaking heteroatoms: for a
+            // CarbonOtherCarbonGroup, MainIndex IS the central bridging atom.
+            List<int> bridges = new List<int>();
+            foreach (FunctionalGroup g in groups)
+            {
+                if (g is CarbonOtherCarbonGroup)
+                {
+                    bridges.Add(g.MainIndex);
+                }
+            }
+            return bridges;
+        }
+        public (List<int> sideA, List<int> sideB) SplitAtBridgingAtom(int bridgeIndex)
+        {
+            // AdjacentAtoms already returns distinct, non-H neighbours — reuse it rather
+            // than re-filtering BondIndexes (which is -1-padded until H-filling runs).
+            int[] carbonNeighbours = AdjacentAtoms(bridgeIndex)
+                .Where(n => atoms[n].Name == "Carbon").ToArray();
+
+            if (carbonNeighbours.Length != 2)
+                throw new Exception("Bridging atoms must bridge exactly 2 carbons"); // rejects trimethylamine etc.
+
+            var blocked = new HashSet<int> { bridgeIndex };
+            List<int> sideA = CollectReachable(carbonNeighbours[0], blocked);
+
+            // Ring-through-heteroatom guard: if the second attachment carbon is reachable
+            // from the first WITHOUT the bridge atom, the bridge sits inside a ring
+            // (THF, epoxides, oxetane, pyrrolidine, lactones). IsCyclic() cannot see these
+            // rings — it only checks the carbon subgraph — so this is the ONLY place they
+            // are caught. Without it, both sides come back as the same atom set and the
+            // molecule is confidently misnamed (THF → "butoxybutane").
+            if (sideA.Contains(carbonNeighbours[1]))
+                throw new Exception("Rings containing a heteroatom are not supported");
+
+            List<int> sideB = CollectReachable(carbonNeighbours[1], blocked);
+            return (sideA, sideB);
+        }
         public List<List<int>> FindBranches(List<int> path)
         {
             List<List<int>> branches = new List<List<int>>();

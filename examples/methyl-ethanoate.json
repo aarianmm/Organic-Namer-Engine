@@ -1,0 +1,10 @@
+{
+  "atoms": [
+    {"element": "C", "bonds": [{"to": 1, "order": 1}]},
+    {"element": "C", "bonds": [{"to": 0, "order": 1}, {"to": 2, "order": 2}, {"to": 3, "order": 1}]},
+    {"element": "O", "bonds": [{"to": 1, "order": 2}]},
+    {"element": "O", "bonds": [{"to": 1, "order": 1}, {"to": 4, "order": 1}]},
+    {"element": "C", "bonds": [{"to": 3, "order": 1}]}
+  ],
+  "specificationSet": "AllGroups"
+}

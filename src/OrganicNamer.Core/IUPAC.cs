@@ -30,9 +30,33 @@ namespace OrganicNamer.Core
             this.atoms = atoms;
             groups = atoms.Groups;
 
+            // ──── Guards (Phase 3) ────
+            // MUST be before MergeFunctionalGroups — the merge step would
+            // incorrectly combine C=O + C-O into COOH on the ester carbon.
+            List<int> bridgingAtoms = atoms.GetBridgingAtoms();
+            bool cyclic = atoms.IsCyclic();
+
+            // A molecule satisfying both early-exit conditions (anisole,
+            // methoxycyclohexane) would be confidently misnamed by whichever
+            // exit ran first — neither path can name it, so reject up front.
+            if (bridgingAtoms.Count > 0 && cyclic)
+                throw new Exception("Molecules with both a ring and a bridging heteroatom are not supported");
+            if (bridgingAtoms.Count > 1)
+                throw new Exception("Multiple bridging heteroatoms are not supported");
+
+            // Early exit: bridging molecules (esters, ethers, amines)
+            if (bridgingAtoms.Count == 1)
+            {
+                names = NameBridgedMolecule(bridgingAtoms[0]);
+                names = names.Distinct().ToArray();
+                suffixFormula = "";
+                suffixRoot = "";
+                return;
+            }
+
             // Early exit: cyclic molecules (rings) — must be before FindEveryLongestPath
             // which requires a non-empty ends array.
-            if (atoms.IsCyclic())
+            if (cyclic)
             {
                 names = NameCyclicMolecule();
                 names = names.Distinct().ToArray();
@@ -385,6 +409,120 @@ namespace OrganicNamer.Core
 
             string alkylPart = spec.alkylNames[branch.Count - 1] + "yl";
             return "(" + FormatName(groupPrefix + alkylPart) + ")";
+        }
+
+        // ── Phase 3: Bridged-molecule naming (esters, ethers, secondary amines) ────
+        private string[] NameBridgedMolecule(int bridgeIndex)
+        {
+            string bridgeSymbol = atoms.Atoms[bridgeIndex].Symbol;
+            var (sideA, sideB) = atoms.SplitAtBridgingAtom(bridgeIndex);
+
+            if (bridgeSymbol == "O")
+            {
+                int acidCarbon = FindAcidCarbon(bridgeIndex);
+                return acidCarbon >= 0
+                    ? NameEster(acidCarbon, sideA, sideB)
+                    : NameEther(sideA, sideB);
+            }
+            if (bridgeSymbol == "N")
+                return NameSecondaryAmine(sideA, sideB);
+
+            throw new Exception($"Bridging atom '{bridgeSymbol}' is not supported");
+            // e.g. CH3-S-CH3: previously "C-S-C is unrecognised" from CheckGroups;
+            // still an explicit rejection, just with a clearer message.
+        }
+        private int FindAcidCarbon(int bridgeIndex)
+        {
+            // Ester pattern: a carbon neighbour of the bridge O that also carries a C=O.
+            // MergeFunctionalGroups has NOT run (the early exit is above it), so the
+            // carbonyl is still recorded as a plain "C=O" FunctionalGroup whose
+            // MainIndex is the carbonyl carbon.
+            foreach (int c in atoms.AdjacentAtoms(bridgeIndex)
+                .Where(n => atoms.Atoms[n].Name == "Carbon"))
+            {
+                if (groups.Any(g => g.GroupFormula == "C=O" && g.Involves(c)))
+                    return c;
+            }
+            return -1; // no carbonyl adjacent to the bridge → it's an ether
+        }
+        private void ValidatePlainAlkylSide(List<int> side, int allowedOxygen)
+        {
+            foreach (int idx in side)
+            {
+                if (idx == allowedOxygen)
+                    continue;
+
+                // Any heteroatom in the side = extra functional group (OH, Cl, second C=O, ...)
+                if (atoms.Atoms[idx].Name != "Carbon")
+                    throw new Exception("Ethers/esters with additional functional groups are not supported");
+
+                // C=C / C≡C in the side would be silently dropped by carbon counting
+                if (groups.Any(g => g is CarbonCarbonGroup && g.Involves(idx)))
+                    throw new Exception("Unsaturated ether/ester chains are not supported");
+
+                // side[0] is the bridge-attachment carbon: it must be a chain END (≤1 carbon
+                // neighbour), otherwise the bridge is attached mid-chain (2-methoxypropane).
+                // All other carbons: ≤2 carbon neighbours = no branching.
+                int limit = (idx == side[0]) ? 1 : 2;
+                if (atoms.AlkylCounter(idx) > limit)
+                    throw new Exception("Branched or mid-chain-attached ether/ester chains are not supported");
+            }
+        }
+        private string[] NameSymmetricBridge(
+            List<int> sideA, List<int> sideB,
+            string substituentSuffix, string baseSuffix, string namePrefix)
+        {
+            ValidatePlainAlkylSide(sideA, allowedOxygen: -1);
+            ValidatePlainAlkylSide(sideB, allowedOxygen: -1);
+
+            int lenA = sideA.Count(i => atoms.Atoms[i].Name == "Carbon");
+            int lenB = sideB.Count(i => atoms.Atoms[i].Name == "Carbon");
+
+            // Convention: shorter chain = substituent, longer = base chain
+            int substituentLen = Math.Min(lenA, lenB);
+            int baseLen = Math.Max(lenA, lenB);
+
+            // namePrefix goes on AFTER FormatName, which lowercases the whole string —
+            // this is what keeps the amine's "N-" uppercase.
+            string body = FormatName(spec.alkylNames[substituentLen] + substituentSuffix
+                                    + spec.alkylNames[baseLen] + baseSuffix);
+            return new[] { namePrefix + body };
+        }
+        private string[] NameEther(List<int> sideA, List<int> sideB) =>
+            NameSymmetricBridge(sideA, sideB, "oxy", spec.middle[""].name, "");
+            // methoxymethane, methoxyethane, ethoxypropane — spec.middle[""] ("an|e")
+            // rather than a hardcoded suffix
+
+        private string[] NameSecondaryAmine(List<int> sideA, List<int> sideB) =>
+            NameSymmetricBridge(sideA, sideB, "yl", "an|amine", "N-");
+            // N-methylethanamine, N-ethylpropanamine
+
+        private string[] NameEster(int acidCarbon, List<int> sideA, List<int> sideB)
+        {
+            // The sides are disjoint (guaranteed by SplitAtBridgingAtom's ring guard) and
+            // each starts at its own bridge-attachment carbon, so acidSide[0] == acidCarbon.
+            var (acidSide, alkylSide) = sideA[0] == acidCarbon ? (sideA, sideB) : (sideB, sideA);
+
+            // The acid side legitimately contains exactly one oxygen: the carbonyl O
+            // double-bonded to the acid carbon. AdjacentAtoms also returns the bridge O,
+            // but the BondOrder == 2 filter excludes it (bridge bonds are always single —
+            // FindGroups throws during graph construction otherwise).
+            int carbonylO = atoms.AdjacentAtoms(acidCarbon)
+                .First(n => atoms.Atoms[n].Name == "Oxygen" && atoms.BondOrder(acidCarbon, n) == 2);
+
+            ValidatePlainAlkylSide(acidSide, allowedOxygen: carbonylO);
+            ValidatePlainAlkylSide(alkylSide, allowedOxygen: -1);
+
+            int acidLen = acidSide.Count(i => atoms.Atoms[i].Name == "Carbon");
+            int alkylLen = alkylSide.Count(i => atoms.Atoms[i].Name == "Carbon");
+
+            // "anoate", NOT "an|oate": FormatName's elision regex removes |x before a
+            // vowel, which would strip the mandatory o (ethan|oate → ethanate).
+            string acidName = spec.alkylNames[acidLen] + "anoate";
+            string alkylName = spec.alkylNames[alkylLen] + "yl";
+
+            return new[] { FormatName(alkylName + " " + acidName) };
+            // "methyl ethanoate", "ethyl propanoate" — methanoate (acidLen == 1) also works
         }
 
         // ── Phase 1: Cyclic naming ─────────────────────────────────────────────────
