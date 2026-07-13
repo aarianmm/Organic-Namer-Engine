@@ -100,6 +100,10 @@ curl -X POST http://localhost:7071/api/name \
 | `propene.json` | C₃H₆ | prop-1-ene | Alkene with double bond |
 | `ethanoic-acid.json` | CH₃COOH | ethan-1-oic acid | Carboxylic acid (acetic acid) |
 | `2-chloropropane.json` | CH₃CHClCH₃ | 2-chloropropane | Halogenated compound |
+| `cyclohexane.json` | C₆H₁₂ | cyclohexane | Cycloalkane ring |
+| `methylcyclohexane.json` | C₆H₁₁CH₃ | methylcyclohexane | Substituted cycloalkane |
+| `methoxymethane.json` | CH₃OCH₃ | methoxymethane | Ether (heavy atoms only — H filled implicitly) |
+| `methyl-ethanoate.json` | CH₃COOCH₃ | methyl ethanoate | Ester (heavy atoms only — H filled implicitly) |
 
 ## JSON Format
 
