@@ -126,11 +126,13 @@ namespace OrganicNamer.Core
             Regex startDashes = new Regex(@"([a-z])(\d)");
             Regex endDashes = new Regex(@"(\d)([a-z])");
             Regex parenthesisDashes = new Regex(@"(\d)(\()"); //digit before parenthesis needs a dash
+            Regex closeParenDashes = new Regex(@"(\))(\d)");  //digit after a closing parenthesis too
             name = vowels.Replace(name, "");
             name = name.Replace("|", "");
             name = startDashes.Replace(name, (m) => m.Groups[1].Value + "-" + m.Groups[2].Value);
             name = endDashes.Replace(name, (m) => m.Groups[1].Value + "-" + m.Groups[2].Value);
             name = parenthesisDashes.Replace(name, (m) => m.Groups[1].Value + "-" + m.Groups[2].Value);
+            name = closeParenDashes.Replace(name, (m) => m.Groups[1].Value + "-" + m.Groups[2].Value);
             return name;
         }
         private List<(List<int> chain, List<List<int>> branches)> NarrowDownChainsByBranches(List<List<int>> chains)
@@ -339,6 +341,11 @@ namespace OrganicNamer.Core
             }
             return indexes;
         }
+        // IUPAC alphabetisation key: compare complete substituent names by their letters
+        // only — "(1-methylethyl)" sorts under "m", "(hydroxymethyl)" under "h". Also
+        // neutralises the '|' elision markers in raw spec words ("meth|ayl" → "methayl").
+        private static string AlphaKey(string name) =>
+            new string(name.Where(char.IsLetter).ToArray());
         private string NameSegment(Dictionary<string, List<int>> namesAndCarbonNumbers)
         {
             List<(string numbers, string name)> names = new List<(string, string)>();
@@ -360,7 +367,8 @@ namespace OrganicNamer.Core
                 numbers += numericalPrefix;
                 names.Add((numbers, name));
             }
-            names = names.OrderBy(x => x.name).ToList();
+            names = names.OrderBy(x => AlphaKey(x.name), StringComparer.Ordinal)
+                         .ThenBy(x => x.name, StringComparer.Ordinal).ToList();
             string nameSegment = "";
             for (int i = 0; i < names.Count; i++)
             {
@@ -661,7 +669,10 @@ namespace OrganicNamer.Core
                 return new[] { FormatName(subName + ringBaseName + middleName) };
             }
 
-            (int[] numbering, List<string> subNames) = FindBestRingNumbering(ring, substituents, ringSet);
+            var named = substituents
+                .Select(s => (s.ringPosition, name: GetSubstituentName(s.atomIndex, s.isCarbon, ringSet)))
+                .ToList();
+            (int[] numbering, List<string> subNames) = FindBestRingNumbering(ring, named);
             string prefixName = BuildRingPrefixName(numbering, subNames);
             return new[] { FormatName(prefixName + ringBaseName + middleName) };
         }
@@ -688,7 +699,10 @@ namespace OrganicNamer.Core
             }
 
             // 2 substituents: number to give lowest locants
-            (int[] numbering, List<string> subNames) = FindBestRingNumbering(ring, substituents, ringSet);
+            var named = substituents
+                .Select(s => (s.ringPosition, name: GetSubstituentName(s.atomIndex, s.isCarbon, ringSet)))
+                .ToList();
+            (int[] numbering, List<string> subNames) = FindBestRingNumbering(ring, named);
             string prefixName = BuildRingPrefixName(numbering, subNames);
             return new[] { FormatName(prefixName + "benzene") };
         }
@@ -724,34 +738,32 @@ namespace OrganicNamer.Core
         }
         private (int[] bestNumbering, List<string> subNames) FindBestRingNumbering(
             List<int> ring,
-            List<(int ringPosition, int atomIndex, bool isCarbon)> substituents,
-            HashSet<int> ringSet)
+            List<(int ringPosition, string name)> substituents,
+            int anchorPos = -1) // G4: ring position forced to locant 1 (parent anchor)
         {
             int n = ring.Count;
             int[]? bestLocants = null;
-            List<string>? bestNamesForComparison = null;
+            List<string>? bestNames = null;
             int bestStart = 0;
             int bestDirection = 0;
 
-            for (int start = 0; start < n; start++)
+            foreach (int start in anchorPos >= 0 ? new[] { anchorPos } : Enumerable.Range(0, n).ToArray())
             {
                 for (int dir = 0; dir < 2; dir++) // 0 = forward, 1 = reverse
                 {
-                    var locantNamePairs = new List<(int locant, string name)>();
-                    foreach (var (ringPos, atomIdx, isCarbon) in substituents)
+                    var pairs = new List<(int locant, string name)>();
+                    foreach (var (ringPos, name) in substituents)
                     {
                         int locant = dir == 0
                             ? ((ringPos - start + n) % n) + 1
                             : ((start - ringPos + n) % n) + 1;
-                        string name = GetSubstituentName(atomIdx, isCarbon, ringSet);
-                        locantNamePairs.Add((locant, name));
+                        pairs.Add((locant, name));
                     }
-
-                    locantNamePairs.Sort((a, b) => a.locant != b.locant
+                    pairs.Sort((a, b) => a.locant != b.locant
                         ? a.locant.CompareTo(b.locant)
-                        : string.Compare(a.name, b.name, StringComparison.Ordinal));
-                    int[] locants = locantNamePairs.Select(p => p.locant).ToArray();
-                    List<string> nameList = locantNamePairs.Select(p => p.name).ToList();
+                        : string.CompareOrdinal(AlphaKey(a.name), AlphaKey(b.name)));
+                    int[] locants = pairs.Select(p => p.locant).ToArray();
+                    List<string> nameList = pairs.Select(p => p.name).ToList();
 
                     bool isBetter = false;
                     if (bestLocants == null)
@@ -770,7 +782,7 @@ namespace OrganicNamer.Core
                         {
                             for (int i = 0; i < nameList.Count; i++)
                             {
-                                int cmp = string.Compare(nameList[i], bestNamesForComparison![i], StringComparison.Ordinal);
+                                int cmp = string.CompareOrdinal(AlphaKey(nameList[i]), AlphaKey(bestNames![i]));
                                 if (cmp < 0) { isBetter = true; break; }
                                 if (cmp > 0) break;
                             }
@@ -780,14 +792,13 @@ namespace OrganicNamer.Core
                     if (isBetter)
                     {
                         bestLocants = locants;
-                        bestNamesForComparison = nameList;
+                        bestNames = nameList;
                         bestStart = start;
                         bestDirection = dir;
                     }
                 }
             }
 
-            // Build final result aligned with substituents order
             int[] numbering = new int[substituents.Count];
             List<string> subNames = new List<string>();
             for (int i = 0; i < substituents.Count; i++)
@@ -796,7 +807,7 @@ namespace OrganicNamer.Core
                 numbering[i] = bestDirection == 0
                     ? ((ringPos - bestStart + n) % n) + 1
                     : ((bestStart - ringPos + n) % n) + 1;
-                subNames.Add(GetSubstituentName(substituents[i].atomIndex, substituents[i].isCarbon, ringSet));
+                subNames.Add(substituents[i].name);
             }
             return (numbering, subNames);
         }
