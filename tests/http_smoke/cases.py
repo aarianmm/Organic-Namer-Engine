@@ -329,18 +329,99 @@ def _dimethoxymethane():
 
 CASES["dimethoxymethane_should_reject"] = reject(payload(_dimethoxymethane()))
 
-def _ethanoic_anhydride():
-    a = _ester(2, 2)  # CH3-CO-O-CH2CH3; atom 3 is the alkyl side's bridge-attached C
-    attach_atom(a, 3, "O", order=2)  # make it a second carbonyl -> anhydride
+def _sym_anhydride(acyl_len):
+    """R-CO-O-CO-R symmetric acid anhydride."""
+    a = new_atoms()
+    c_a = add_atom(a, "C")
+    attach_chain(a, c_a, acyl_len - 1)
+    attach_atom(a, c_a, "O", order=2)
+    c_b = add_atom(a, "C")
+    attach_chain(a, c_b, acyl_len - 1)
+    attach_atom(a, c_b, "O", order=2)
+    o = add_atom(a, "O")
+    bond(a, c_a, o)
+    bond(a, c_b, o)
     return a
+
+CASES["ethanoic_anhydride"] = exact(payload(_sym_anhydride(2)), "ethanoic anhydride")
+CASES["propanoic_anhydride"] = exact(payload(_sym_anhydride(3)), "propanoic anhydride")
 
 def _n_methylethanamide():
     a = _bridged(2, 1, "N")  # CH3CH2-NH-CH3, then make the ethyl side's first C a carbonyl
     attach_atom(a, 0, "O", order=2)
     return a
 
-CASES["ethanoic_anhydride_should_reject"] = reject(payload(_ethanoic_anhydride()))
-CASES["n_methylethanamide_should_reject"] = reject(payload(_n_methylethanamide()))
+CASES["n_methylethanamide"] = exact(payload(_n_methylethanamide()), "N-methylethanamide")
+
+def _n_ethylethanamide():
+    a = _bridged(2, 2, "N")    # CH3CH2-NH-CH2CH3
+    attach_atom(a, 0, "O", order=2)  # carbonyl on side-A's first C -> acid side = ethanoyl
+    return a
+
+CASES["n_ethylethanamide"] = exact(payload(_n_ethylethanamide()), "N-ethylethanamide")
+
+def _n_methylpropanamide():
+    a = _bridged(3, 1, "N")    # CH3CH2CH2-NH-CH3
+    attach_atom(a, 0, "O", order=2)  # acid side = propanoyl (3 C), N-side = methyl
+    return a
+
+CASES["n_methylpropanamide"] = exact(payload(_n_methylpropanamide()), "N-methylpropanamide")
+
+def _nn_dimethylethanamide():
+    a = new_atoms()
+    acid_c = add_atom(a, "C")
+    attach_chain(a, acid_c, 1)
+    attach_atom(a, acid_c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, acid_c, n)
+    bond(a, n, add_atom(a, "C"))      # N-methyl
+    bond(a, n, add_atom(a, "C"))      # N-methyl
+    return a
+
+CASES["nn_dimethylethanamide"] = exact(payload(_nn_dimethylethanamide()), "N,N-dimethylethanamide")
+
+def _n_ethyl_n_methylethanamide():
+    a = new_atoms()
+    acid_c = add_atom(a, "C")
+    attach_chain(a, acid_c, 1)
+    attach_atom(a, acid_c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, acid_c, n)
+    bond(a, n, add_atom(a, "C"))                                   # N-methyl
+    et = add_atom(a, "C")
+    bond(a, n, et)
+    attach_chain(a, et, 1)                                         # N-ethyl
+    return a
+
+CASES["n_ethyl_n_methylethanamide"] = exact(
+    payload(_n_ethyl_n_methylethanamide()), "N-ethyl-N-methylethanamide")
+
+def _diacetimide():                    # imide: N with two acyl carbons
+    a = new_atoms()
+    c_a = add_atom(a, "C")
+    attach_chain(a, c_a, 1)
+    attach_atom(a, c_a, "O", order=2)
+    c_b = add_atom(a, "C")
+    attach_chain(a, c_b, 1)
+    attach_atom(a, c_b, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, c_a, n)
+    bond(a, c_b, n)
+    return a
+
+CASES["diacetimide_should_reject"] = reject(payload(_diacetimide()))
+
+def _n_phenylethanamide():             # aromatic amide -> E6, not Wave 1
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    c = add_atom(a, "C")
+    bond(a, n, c)
+    attach_chain(a, c, 1)
+    attach_atom(a, c, "O", order=2)
+    return a
+
+CASES["n_phenylethanamide_should_reject"] = reject(payload(_n_phenylethanamide()))
 
 def _trimethylamine():
     a = new_atoms()
