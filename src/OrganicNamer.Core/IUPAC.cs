@@ -553,7 +553,7 @@ namespace OrganicNamer.Core
                 return locants + "-" + spec.numericalPrefixes[subNames.Count] + subNames[0]; // "N,N-dimethyl"
             }
             var sorted = subNames.OrderBy(w => w, StringComparer.Ordinal);
-            return string.Concat(sorted.Select(w => "N-" + w));                              // "N-ethyl-N-methyl"
+            return string.Join("-", sorted.Select(w => "N-" + w));                           // "N-ethyl-N-methyl"
         }
 
         private string[] NameSymmetricBridge(
