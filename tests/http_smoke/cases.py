@@ -15,7 +15,8 @@ See Algorithm-Extension-Plan.md for the phase-by-phase design this exercises.
 from builders import (
     new_atoms, add_atom, bond, carbon_ring, benzene_ring,
     attach_chain, attach_atom, attach_branch, attach_hydroxymethyl,
-    attach_chloromethyl, ring_with_chain_listed_first, payload,
+    attach_chloromethyl, attach_acyl, attach_nitrile, attach_vinyl,
+    ring_with_chain_listed_first, payload,
 )
 
 
@@ -86,15 +87,12 @@ def _chlorocyclohexane():
 
 CASES["chlorocyclohexane"] = exact(payload(_chlorocyclohexane()), "chlorocyclohexane")
 
-# Branched/functionalised ring substituents are explicitly rejected as of Phase 2
-# (see ValidateRingSubstituents in Algorithm-Extension-Plan.md) - previously this
-# silently misnamed as "propylcyclohexane", ignoring the branching.
 def _isopropylcyclohexane():
     a = carbon_ring(6)
     attach_branch(a, 0, "isopropyl")
     return a
 
-CASES["isopropylcyclohexane_branched_sub"] = reject(payload(_isopropylcyclohexane()))
+CASES["isopropylcyclohexane"] = exact(payload(_isopropylcyclohexane()), "(1-methylethyl)cyclohexane")
 
 # ── Phase 4: branch-tip functional groups ──
 def _hydroxymethylpropane():
@@ -197,7 +195,7 @@ def _isopropylbenzene():
     attach_branch(a, 0, "isopropyl")
     return a
 
-CASES["isopropylbenzene_should_reject"] = reject(payload(_isopropylbenzene()))
+CASES["isopropylbenzene"] = exact(payload(_isopropylbenzene()), "(1-methylethyl)benzene")
 
 def _cyclohexanone():
     a = carbon_ring(6)
@@ -216,6 +214,118 @@ def _fused_ring():
     return a
 
 CASES["fused_ring_should_reject"] = reject(payload(_fused_ring()))
+
+# ── Wave 2.b: G1 unified substituent namer (halo-tip / branched-alkyl subs) ──
+def _tertbutylbenzene():
+    a = benzene_ring("A")
+    attach_branch(a, 0, "tertbutyl")
+    return a
+
+CASES["tertbutylbenzene"] = exact(payload(_tertbutylbenzene()), "(1,1-dimethylethyl)benzene")
+
+def _hydroxymethylcyclohexane():
+    a = carbon_ring(6)
+    attach_hydroxymethyl(a, 0)
+    return a
+
+CASES["hydroxymethylcyclohexane"] = exact(payload(_hydroxymethylcyclohexane()), "(hydroxymethyl)cyclohexane")
+
+def _chloromethylbenzene_mono():
+    a = benzene_ring("A")
+    attach_chloromethyl(a, 0)
+    return a
+
+CASES["chloromethylbenzene_mono"] = exact(payload(_chloromethylbenzene_mono()), "(chloromethyl)benzene")
+
+def _chloro_chloromethyl_benzene():   # composite-name alphabetisation + paren dashes
+    a = benzene_ring("A")
+    attach_atom(a, 0, "Cl")
+    attach_chloromethyl(a, 3)
+    return a
+
+CASES["1chloro4chloromethylbenzene"] = exact(
+    payload(_chloro_chloromethyl_benzene()), "1-chloro-4-(chloromethyl)benzene")
+
+def _chloromethyl_hydroxymethyl_cyclohexane():   # pins the )digit dash rule
+    a = carbon_ring(6)
+    attach_chloromethyl(a, 0)
+    attach_hydroxymethyl(a, 1)
+    return a
+
+CASES["chloromethyl_hydroxymethyl_cyclohexane"] = exact(
+    payload(_chloromethyl_hydroxymethyl_cyclohexane()),
+    "1-(chloromethyl)-2-(hydroxymethyl)cyclohexane")
+
+def _2_methylpropanal():              # Q4 fix: was "(methyl)" garbage territory
+    a = _chain(3)
+    attach_acyl(a, 1)
+    return a
+
+CASES["2_methylpropanal"] = exact(payload(_2_methylpropanal()), "2-methylpropan-1-al")
+
+# ── Wave 2.b negatives: G1 guard gates ──
+def _dichloromethylbenzene():         # -CHCl2: multi-group tip (Q2 gate)
+    a = benzene_ring("A")
+    c = add_atom(a, "C")
+    bond(a, 0, c)
+    attach_atom(a, c, "Cl")
+    attach_atom(a, c, "Cl")
+    return a
+
+CASES["dichloromethylbenzene_should_reject"] = reject(payload(_dichloromethylbenzene()))
+
+def _cyclohexylbenzene():             # cyclic substituent (tree guard)
+    a = benzene_ring("A")
+    ring2 = [add_atom(a, "C") for _ in range(6)]
+    for i in range(6):
+        bond(a, ring2[i], ring2[(i + 1) % 6])
+    bond(a, 0, ring2[0])
+    return a
+
+CASES["cyclohexylbenzene_should_reject"] = reject(payload(_cyclohexylbenzene()))
+
+def _vinylcyclohexane():              # unsaturated sub on a NON-aromatic ring
+    a = carbon_ring(6)
+    attach_vinyl(a, 0)
+    return a
+
+CASES["vinylcyclohexane_should_reject"] = reject(payload(_vinylcyclohexane()))
+
+def _aminomethylbenzene():            # suffix-capable tip on benzene (D5 gate)
+    a = benzene_ring("A")
+    c = add_atom(a, "C")
+    bond(a, 0, c)
+    attach_atom(a, c, "N")
+    return a
+
+CASES["aminomethylbenzene_should_reject"] = reject(payload(_aminomethylbenzene()))
+
+def _2_phenylethanol():               # -CH2CH2OH: suffix-capable tip, 2-carbon spine
+    a = benzene_ring("A")
+    chain = attach_chain(a, 0, 2)
+    attach_atom(a, chain[-1], "O")
+    return a
+
+CASES["2_phenylethanol_should_reject"] = reject(payload(_2_phenylethanol()))
+
+def _1_phenylethanol():               # OH on a NON-tip substituent carbon
+    a = benzene_ring("A")
+    c1 = add_atom(a, "C")
+    bond(a, 0, c1)
+    attach_chain(a, c1, 1)
+    attach_atom(a, c1, "O")
+    return a
+
+CASES["1_phenylethanol_should_reject"] = reject(payload(_1_phenylethanol()))
+
+def _cyanomethylbenzene():            # carbon-subsuming tip (Q3 gate)
+    a = benzene_ring("A")
+    c = add_atom(a, "C")
+    bond(a, 0, c)
+    attach_nitrile(a, c)
+    return a
+
+CASES["cyanomethylbenzene_should_reject"] = reject(payload(_cyanomethylbenzene()))
 
 # ── Phase 3: bridging heteroatoms (ethers, esters, secondary amines) ──
 def _bridged(len_a, len_b, bridge_element):
