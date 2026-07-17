@@ -93,6 +93,36 @@ def attach_chloromethyl(atoms, attach_to):
     return c1
 
 
+def attach_acyl(atoms, attach_to, tail_len=0, terminal=None, terminal_order=1):
+    """Attach -C(=O)R : tail_len carbons after the carbonyl C, and/or a
+    terminal heteroatom on the carbonyl C (Cl for -COCl, N for -CONH2)."""
+    c = add_atom(atoms, "C")
+    bond(atoms, attach_to, c)
+    attach_atom(atoms, c, "O", order=2)
+    if tail_len:
+        attach_chain(atoms, c, tail_len)
+    if terminal:
+        attach_atom(atoms, c, terminal, order=terminal_order)
+    return c
+
+
+def attach_nitrile(atoms, attach_to):
+    """Attach -C≡N."""
+    c = add_atom(atoms, "C")
+    bond(atoms, attach_to, c)
+    attach_atom(atoms, c, "N", order=3)
+    return c
+
+
+def attach_vinyl(atoms, attach_to):
+    """Attach -CH=CH2."""
+    c1 = add_atom(atoms, "C")
+    bond(atoms, attach_to, c1)
+    c2 = add_atom(atoms, "C")
+    bond(atoms, c1, c2, 2)
+    return c1
+
+
 def ring_with_chain_listed_first(ring_size, chain_length, ring_bond_orders=None):
     """Build a ring with a straight alkyl chain attached at ring position 0, but with
     the chain's atoms placed BEFORE the ring atoms in the atom list. Regression-tests
