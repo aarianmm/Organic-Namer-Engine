@@ -145,8 +145,9 @@ namespace OrganicNamer.Core
             }
             for (int i = allChainsAndBranches.Count - 1; i >= 0; i--)
             {
+                List<int> chain = allChainsAndBranches[i].chain;
                 List<List<int>> branches = allChainsAndBranches[i].branches;
-                if (!CheckBranchValidity(branches))
+                if (!CheckBranchValidity(chain, branches))
                 {
                     allChainsAndBranches.RemoveAt(i); //branch invalid, so whole chain invalid
                 }
@@ -275,7 +276,7 @@ namespace OrganicNamer.Core
             foreach (List<int> branch in branches)
             {
                 int carbonNumber = chain.IndexOf(branch[0]) + 1;
-                string name = BuildSubstituentName(branch);
+                string name = BuildSubstituentName(chain, branch);
                 if (prefixesAndIndexes.ContainsKey(name))
                 {
                     prefixesAndIndexes[name].Add(carbonNumber);
@@ -376,13 +377,14 @@ namespace OrganicNamer.Core
             }
             return nameSegment;
         }
-        private bool CheckBranchValidity(List<List<int>> branches)
+        private bool CheckBranchValidity(List<int> chain, List<List<int>> branches)
         {
             foreach (List<int> branch in branches)
             {
                 for (int i = 1; i < branch.Count; i++)
                 {
-                    // Sub-branches off branches: not supported
+                    // Sub-branches off branches: not supported (D9 — FindBranches emits
+                    // overlapping paths for these; must stay BEFORE the G1 try below).
                     if (atoms.AlkylCounter(branch[i]) > 2)
                         return false;
 
@@ -391,32 +393,21 @@ namespace OrganicNamer.Core
                     if (!isAtTip && groups.Any(g => g.Involves(branch[i])))
                         return false;
                 }
+                // Wave 2 (D8): a chain candidate is only valid if every branch is
+                // G1-nameable. Filtering here (not throwing later) lets a nameable
+                // sibling chain win instead of a garbage prefix name.
+                try { BuildSubstituentName(chain, branch); }
+                catch { return false; }
             }
             return true;
         }
-        // ── Phase 4: BuildSubstituentName ──────────────────────────────────────────
-        private string BuildSubstituentName(List<int> branch)
+        // ── Phase 4 → Wave 2: chain-branch adapter over G1 ────────────────────────
+        // FindBranches produces PATHS (branch[0] = the junction carbon ON the main
+        // chain); G1 wants the substituent's own first atom plus a blocked set.
+        private string BuildSubstituentName(List<int> chain, List<int> branch)
         {
-            int tipIndex = branch[branch.Count - 1]; // last carbon in branch
-
-            // Check if the tip carbon carries a functional group
-            FunctionalGroup? tipGroup = groups.FirstOrDefault(g => g.Involves(tipIndex));
-
-            if (tipGroup == null)
-            {
-                // Pure alkyl: branch[0] is junction on main chain, so subtract 1
-                return spec.alkylNames[branch.Count - 1] + "yl";
-            }
-
-            // Tip has a group: build "(groupalkyl)" e.g. "(hydroxymethyl)"
-            string groupPrefix = "";
-            if (spec.prefixOrSuffix.ContainsKey(tipGroup.GroupFormula))
-                groupPrefix = spec.prefixOrSuffix[tipGroup.GroupFormula].prefix;
-            else if (spec.prefixOnly.ContainsKey(tipGroup.GroupFormula))
-                groupPrefix = spec.prefixOnly[tipGroup.GroupFormula];
-
-            string alkylPart = spec.alkylNames[branch.Count - 1] + "yl";
-            return "(" + FormatName(groupPrefix + alkylPart) + ")";
+            return NameSubstituent(branch[0], branch[1], new HashSet<int>(chain),
+                                   allowSuffixCapableTip: true);
         }
 
         // ── Phase 3 / Wave 1: Bridged-molecule naming ──────────────────────────────
