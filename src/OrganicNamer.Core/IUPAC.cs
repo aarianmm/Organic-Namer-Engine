@@ -798,6 +798,12 @@ namespace OrganicNamer.Core
         // ── Phase 1: Cyclic naming ─────────────────────────────────────────────────
         private string[] NameCyclicMolecule()
         {
+            // Wave 2 (D2): merging here is safe — dispatch has already run, so no
+            // bridging heteroatom (and hence no ester/amide carbon the merge could
+            // corrupt) can be present — and necessary, so ring substituents like -COOH
+            // appear as one merged group for the parent table and G1's tip lookup.
+            atoms.MergeFunctionalGroups(spec.merging);
+
             List<int> ring = atoms.FindRing();
 
             if (atoms.IsAromatic(ring))
@@ -808,89 +814,53 @@ namespace OrganicNamer.Core
                 && ringSet.Contains(cc.MainIndex) && ringSet.Contains(cc.OtherCarbonIndex)))
                 throw new Exception("Non-aromatic rings containing double or triple bonds are not supported");
 
-            int ringSize = ring.Count;
-            string ringBaseName = "cyclo" + spec.alkylNames[ringSize];
+            string ringBaseName = "cyclo" + spec.alkylNames[ring.Count];
             string middleName = spec.middle[""].name; // "an|e" for alkane (from spec)
 
             var substituents = atoms.GetRingSubstituents(ring);
-            ValidateRingSubstituents(ring, substituents);
-
             if (substituents.Count == 0)
                 return new[] { FormatName(ringBaseName + middleName) };
 
-            if (substituents.Count == 1)
-            {
-                // Single substituent: no locant needed (IUPAC convention)
-                string subName = GetSubstituentName(substituents[0].atomIndex, substituents[0].isCarbon, ringSet);
-                return new[] { FormatName(subName + ringBaseName + middleName) };
-            }
-
+            // G1 names every substituent — validation now lives inside the namer.
             var named = substituents
-                .Select(s => (s.ringPosition, name: GetSubstituentName(s.atomIndex, s.isCarbon, ringSet)))
+                .Select(s => (s.ringPosition,
+                              name: NameSubstituent(ring[s.ringPosition], s.atomIndex, ringSet,
+                                                    allowSuffixCapableTip: true)))
                 .ToList();
+
+            if (named.Count == 1)
+                return new[] { FormatName(named[0].name + ringBaseName + middleName) };
+
             (int[] numbering, List<string> subNames) = FindBestRingNumbering(ring, named);
-            string prefixName = BuildRingPrefixName(numbering, subNames);
-            return new[] { FormatName(prefixName + ringBaseName + middleName) };
+            return new[] { FormatName(BuildRingPrefixName(numbering, subNames) + ringBaseName + middleName) };
         }
         // ── Phase 2: Aromatic naming ───────────────────────────────────────────────
         private string[] NameAromaticMolecule(List<int> ring)
         {
             HashSet<int> ringSet = new HashSet<int>(ring);
             var substituents = atoms.GetRingSubstituents(ring);
-            ValidateRingSubstituents(ring, substituents);
 
             if (substituents.Count == 0)
                 return new[] { "benzene" };
 
-            // Enforce scope limit: ≤2 substituents
+            // Enforce scope limit: ≤2 substituents   // ← DELETE THIS BLOCK IN PHASE D (E3)
             if (substituents.Count > 2)
                 throw new Exception("Benzene with more than 2 substituents is not supported");
 
-            if (substituents.Count == 1)
-            {
-                string subName = GetSubstituentName(substituents[0].atomIndex, substituents[0].isCarbon, ringSet);
-                // Single substituent: no locant needed
-                return new[] { FormatName(subName + "benzene") };
+            var named = substituents
+                .Select(s => (s.ringPosition,
+                              name: NameSubstituent(ring[s.ringPosition], s.atomIndex, ringSet,
+                                                    allowSuffixCapableTip: false)))
+                .ToList();
+
+            if (named.Count == 1)
+                return new[] { FormatName(named[0].name + "benzene") };
                 // e.g. "chlorobenzene", "methylbenzene"
-            }
 
             // 2 substituents: number to give lowest locants
-            var named = substituents
-                .Select(s => (s.ringPosition, name: GetSubstituentName(s.atomIndex, s.isCarbon, ringSet)))
-                .ToList();
             (int[] numbering, List<string> subNames) = FindBestRingNumbering(ring, named);
             string prefixName = BuildRingPrefixName(numbering, subNames);
             return new[] { FormatName(prefixName + "benzene") };
-        }
-        // ── Phase 2: Shared ring-substituent validation ────────────────────────────
-        private void ValidateRingSubstituents(
-            List<int> ring,
-            List<(int ringPosition, int atomIndex, bool isCarbon)> substituents)
-        {
-            HashSet<int> ringSet = new HashSet<int>(ring);
-            foreach (var (ringPos, atomIdx, isCarbon) in substituents)
-            {
-                if (!isCarbon)
-                {
-                    // A heteroatom attached by a multiple bond (cyclohexanone's =O) would be
-                    // looked up under the single-bond formula ("C-O" → hydroxy) — reject instead.
-                    if (atoms.BondOrder(ring[ringPos], atomIdx) != 1)
-                        throw new Exception("Ring substituents attached by a multiple bond are not supported");
-                    continue;
-                }
-
-                // Carbon substituents must be plain, unbranched alkyl chains.
-                List<int> subAtoms = atoms.CollectReachable(atomIdx, ringSet);
-                foreach (int a in subAtoms)
-                {
-                    if (atoms.Atoms[a].Name != "Carbon" || groups.Any(g => g.Involves(a)))
-                        throw new Exception("Ring substituents carrying functional groups are not supported");
-                    if (atoms.AlkylCounter(a) > 2)
-                        throw new Exception("Branched ring substituents are not supported");
-                    if (a != atomIdx && atoms.AdjacentAtoms(a).Any(n => ringSet.Contains(n)))
-                        throw new Exception("Fused or bridged ring systems are not supported");
-                }
-            }
         }
         private (int[] bestNumbering, List<string> subNames) FindBestRingNumbering(
             List<int> ring,
@@ -967,22 +937,6 @@ namespace OrganicNamer.Core
             }
             return (numbering, subNames);
         }
-        private string GetSubstituentName(int atomIndex, bool isCarbon, HashSet<int> ringSet)
-        {
-            if (!isCarbon)
-            {
-                // Direct heteroatom on ring (Cl, Br, F, I, OH via O, etc.)
-                string symbol = atoms.Atoms[atomIndex].Symbol;
-                string formula = "C-" + symbol;
-                if (spec.prefixOnly.ContainsKey(formula))
-                    return spec.prefixOnly[formula]; // "chloro", "bromo" etc.
-                if (spec.prefixOrSuffix.ContainsKey(formula))
-                    return spec.prefixOrSuffix[formula].prefix; // "hydroxy", "amino" etc.
-                return symbol.ToLower(); // fallback
-            }
-            int chainLength = CountSubstituentCarbons(atomIndex, ringSet);
-            return spec.alkylNames[chainLength] + "yl"; // "methyl", "ethyl" etc.
-        }
         private string BuildRingPrefixName(int[] numbering, List<string> subNames)
         {
             Dictionary<string, List<int>> nameToLocants = new Dictionary<string, List<int>>();
@@ -995,25 +949,6 @@ namespace OrganicNamer.Core
             }
             return NameSegment(nameToLocants);
         }
-        private int CountSubstituentCarbons(int startIndex, HashSet<int> ringSet)
-        {
-            int count = 0;
-            HashSet<int> visited = new HashSet<int>(ringSet); // block ring atoms
-            CountCarbonsDFS(startIndex, visited, ref count);
-            return count;
-        }
-        private void CountCarbonsDFS(int current, HashSet<int> visited, ref int count)
-        {
-            if (atoms.Atoms[current].Name != "Carbon") return;
-            visited.Add(current);
-            count++;
-            foreach (int neighbour in atoms.AdjacentAtoms(current))
-            {
-                if (!visited.Contains(neighbour))
-                    CountCarbonsDFS(neighbour, visited, ref count);
-            }
-        }
-
         public static void DisplaySpecDebug(string fileName) //no purpose besides displaying the rules extracted from the specification file
         {
             namingSpec spec = LoadSpecification(fileName);
