@@ -126,11 +126,13 @@ namespace OrganicNamer.Core
             Regex startDashes = new Regex(@"([a-z])(\d)");
             Regex endDashes = new Regex(@"(\d)([a-z])");
             Regex parenthesisDashes = new Regex(@"(\d)(\()"); //digit before parenthesis needs a dash
+            Regex closeParenDashes = new Regex(@"(\))(\d)");  //digit after a closing parenthesis too
             name = vowels.Replace(name, "");
             name = name.Replace("|", "");
             name = startDashes.Replace(name, (m) => m.Groups[1].Value + "-" + m.Groups[2].Value);
             name = endDashes.Replace(name, (m) => m.Groups[1].Value + "-" + m.Groups[2].Value);
             name = parenthesisDashes.Replace(name, (m) => m.Groups[1].Value + "-" + m.Groups[2].Value);
+            name = closeParenDashes.Replace(name, (m) => m.Groups[1].Value + "-" + m.Groups[2].Value);
             return name;
         }
         private List<(List<int> chain, List<List<int>> branches)> NarrowDownChainsByBranches(List<List<int>> chains)
