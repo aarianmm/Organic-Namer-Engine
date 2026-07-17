@@ -325,6 +325,25 @@
             List<int> sideB = CollectReachable(carbonNeighbours[1], blocked);
             return (sideA, sideB);
         }
+        // Sibling of SplitAtBridgingAtom for tertiary N-bridges (3 carbon neighbours).
+        // The 2-way original stays untouched. Same ring-through-heteroatom guard.
+        public List<List<int>> SplitAtBridgingAtomMultiway(int bridgeIndex)
+        {
+            int[] carbonNeighbours = AdjacentAtoms(bridgeIndex)
+                .Where(n => atoms[n].Name == "Carbon").ToArray();
+
+            var blocked = new HashSet<int> { bridgeIndex };
+            var sides = new List<List<int>>();
+            foreach (int cn in carbonNeighbours)
+            {
+                List<int> side = CollectReachable(cn, blocked); // side[0] == cn
+                foreach (int other in carbonNeighbours)
+                    if (other != cn && side.Contains(other))
+                        throw new Exception("Rings containing a heteroatom are not supported");
+                sides.Add(side);
+            }
+            return sides;
+        }
         public List<List<int>> FindBranches(List<int> path)
         {
             List<List<int>> branches = new List<List<int>>();
