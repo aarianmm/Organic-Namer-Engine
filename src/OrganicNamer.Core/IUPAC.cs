@@ -639,6 +639,162 @@ namespace OrganicNamer.Core
             return new[] { nPrefix + AcidSideName(acid, AcidClass.Amide) };          // "N,N-dimethylethanamide"
         }
 
+        // ── Wave 2 / G1: unified substituent namer ─────────────────────────────────
+        // One entry point for naming a substituent hanging off a parent skeleton (a
+        // ring carbon or a chain junction). Returns a fully FormatName'd prefix word
+        // ("methyl", "chloro", "(hydroxymethyl)", "(1-methylethyl)"), or throws — the
+        // capability gate (Constraint 2: name it exactly or reject, never guess).
+        // allowSuffixCapableTip: false on the aromatic path (D5) — a suffix-capable
+        // tip there belongs to the parent/pattern tables, never to a prefix.
+        private string NameSubstituent(int parentIndex, int attachIndex, HashSet<int> blocked,
+                                       bool allowSuffixCapableTip)
+        {
+            if (atoms.BondOrder(parentIndex, attachIndex) != 1)
+                throw new Exception("Substituents attached by a multiple bond are not supported");
+
+            if (atoms.Atoms[attachIndex].Name != "Carbon")
+                return NameHeteroatomSubstituent(attachIndex, blocked);
+
+            return NameCarbonSubstituent(attachIndex, blocked, allowSuffixCapableTip);
+        }
+
+        // Degree-aware heteroatom naming — the anisole / N-methylphenylamine backstop
+        // demanded by Further-Extension-Plan G1. In Wave 2 a non-terminal heteroatom
+        // substituent is unreachable (bridging atoms and heteroatom–heteroatom pairs are
+        // rejected upstream), so the degree guard is defence in depth; E6 replaces the
+        // throw with alkoxy naming for O, and Wave 3 adds a PolyatomicGroup branch ABOVE
+        // the degree guard for nitro.
+        private string NameHeteroatomSubstituent(int attachIndex, HashSet<int> blocked)
+        {
+            if (atoms.AdjacentAtoms(attachIndex).Any(n => !blocked.Contains(n)))
+                throw new Exception("Substituents extending beyond a single heteroatom are not supported");
+
+            string formula = "C-" + atoms.Atoms[attachIndex].Symbol;
+            if (spec.prefixOnly.ContainsKey(formula))
+                return FormatName(spec.prefixOnly[formula]);
+            if (spec.prefixOrSuffix.ContainsKey(formula))
+                return FormatName(spec.prefixOrSuffix[formula].prefix);
+            // Replaces GetSubstituentName's symbol.ToLower() fallback, which silently
+            // emitted "cl" under specs with no halo entries (Q1). Reject instead.
+            throw new Exception($"No prefix name available for substituent '{formula}'");
+        }
+
+        // Carbon substituent grammar (Wave 2, per ruling D4):
+        //   spine = longest carbon path from the attachment atom (locant 1 = attachment),
+        //   plus EITHER one tip functional group (on the last spine carbon only)
+        //        OR bare methyl branches on spine carbons — never both.
+        private string NameCarbonSubstituent(int attachIndex, HashSet<int> blocked,
+                                             bool allowSuffixCapableTip)
+        {
+            List<int> subAtoms = atoms.CollectReachable(attachIndex, blocked); // subAtoms[0] == attachIndex
+
+            // 1. Attachment guards: the substituent touches the parent skeleton exactly
+            //    once, through attachIndex (rejects fused/bridged ring systems).
+            if (atoms.AdjacentAtoms(attachIndex).Count(n => blocked.Contains(n)) != 1)
+                throw new Exception("Fused or bridged ring systems are not supported");
+            foreach (int a in subAtoms)
+                if (a != attachIndex && atoms.AdjacentAtoms(a).Any(n => blocked.Contains(n)))
+                    throw new Exception("Fused or bridged ring systems are not supported");
+
+            // 2. Cycle guard (cyclohexyl / biphenyl substituents): the subgraph must be
+            //    a tree. MUST run before LongestPathFrom, which assumes acyclicity.
+            HashSet<int> subSet = new HashSet<int>(subAtoms);
+            int directedEdges = subAtoms.Sum(a => atoms.AdjacentAtoms(a).Count(n => subSet.Contains(n)));
+            if (directedEdges != 2 * (subAtoms.Count - 1))
+                throw new Exception("Cyclic substituents are not supported");
+
+            // 3. No unsaturation anywhere in the substituent. (The styrene shape is
+            //    handled by the whole-molecule pattern table BEFORE G1 is called.)
+            if (groups.Any(g => g is CarbonCarbonGroup && subAtoms.Any(g.Involves)))
+                throw new Exception("Unsaturated substituents are not supported");
+
+            // 4. Spine and inventory.
+            HashSet<int> subCarbons = new HashSet<int>(
+                subAtoms.Where(i => atoms.Atoms[i].Name == "Carbon"));
+            List<int> spine = LongestPathFrom(attachIndex, subCarbons);
+            int tip = spine[spine.Count - 1];
+
+            // Heteroatoms may only sit on the spine tip.
+            foreach (int a in subAtoms)
+                if (atoms.Atoms[a].Name != "Carbon" && !atoms.AdjacentAtoms(tip).Contains(a))
+                    throw new Exception("Substituents with functional groups on a non-tip atom are not supported");
+
+            List<FunctionalGroup> tipGroups = groups
+                .Where(g => !(g is CarbonCarbonGroup) && g.MainIndex == tip).ToList();
+            List<int> branchCarbons = subCarbons.Where(c => !spine.Contains(c)).ToList();
+
+            if (branchCarbons.Count == 0 && tipGroups.Count == 0)
+                return FormatName(spec.alkylNames[spine.Count] + "yl");        // plain alkyl
+
+            if (branchCarbons.Count == 0)                                      // tip-group alkyl
+            {
+                if (tipGroups.Count > 1)
+                    throw new Exception("Substituents with multiple functional groups are not supported"); // Q2: -CF3, -CHCl2
+                FunctionalGroup tg = tipGroups[0];
+                // Carbon-subsuming groups (merged COOH/COCl/CON, and C≡N): their prefix
+                // names include the tip carbon itself, so prefix+alkyl naming here is
+                // structurally wrong (Q3). Reject; the chain path's candidate filter
+                // then lets a suffix-bearing chain name the molecule correctly.
+                if (tg is MergedGroup || tg.GroupFormula == "C≡N")
+                    throw new Exception("Substituents containing carbon-based functional groups are not supported");
+                string groupPrefix = TipGroupPrefix(tg.GroupFormula, allowSuffixCapableTip);
+                return "(" + FormatName(groupPrefix + spec.alkylNames[spine.Count] + "yl") + ")";
+            }
+
+            // Branched alkyl: pure carbon, methyl branches only (D4).
+            if (tipGroups.Count > 0 || subCarbons.Count != subAtoms.Count)
+                throw new Exception("Branched substituents carrying functional groups are not supported");
+            List<int> locants = new List<int>();
+            foreach (int b in branchCarbons)
+            {
+                if (atoms.AlkylCounter(b) != 1)
+                    throw new Exception("Substituent branches longer than methyl are not supported");
+                int spineIndex = spine.FindIndex(s => atoms.AdjacentAtoms(b).Contains(s));
+                if (spineIndex < 0)
+                    throw new Exception("Substituent branches longer than methyl are not supported");
+                locants.Add(spineIndex + 1);
+            }
+            string branchPart = NameSegment(new Dictionary<string, List<int>>
+                { { spec.alkylNames[1] + "yl", locants } });                   // "1meth|ayl" / "1,1dimeth|ayl"
+            return "(" + FormatName(branchPart + spec.alkylNames[spine.Count] + "yl") + ")";
+        }
+
+        // Prefix vocabulary for a (non-carbon-subsuming) tip functional group.
+        private string TipGroupPrefix(string formula, bool allowSuffixCapable)
+        {
+            if (spec.prefixOnly.ContainsKey(formula))
+                return spec.prefixOnly[formula];                               // chloro, bromo, ...
+            if (spec.prefixOrSuffix.ContainsKey(formula))
+            {
+                if (!allowSuffixCapable)                                       // aromatic path (D5)
+                    throw new Exception("Aromatic ring substituents carrying a principal-group tip are not supported");
+                return spec.prefixOrSuffix[formula].prefix;                    // hydroxy, amino, ...
+            }
+            // e.g. tip C=O (endDependent only): was silent "" before (Q4). Reject.
+            throw new Exception($"No prefix name available for group '{formula}'");
+        }
+
+        // Longest simple path from `start` through the given carbon set. The caller has
+        // already verified the subgraph is a tree, so plain DFS terminates. Ties resolve
+        // by adjacency order — deterministic, and equivalent under the methyl-only
+        // branch rule (any leftover longer than methyl throws regardless of tie choice).
+        private List<int> LongestPathFrom(int start, HashSet<int> allowed)
+        {
+            List<int> best = new List<int> { start };
+            foreach (int n in atoms.AdjacentAtoms(start).Where(allowed.Contains))
+            {
+                HashSet<int> narrowed = new HashSet<int>(allowed);
+                narrowed.Remove(start);
+                List<int> tail = LongestPathFrom(n, narrowed);
+                if (tail.Count + 1 > best.Count)
+                {
+                    best = new List<int> { start };
+                    best.AddRange(tail);
+                }
+            }
+            return best;
+        }
+
         // ── Phase 1: Cyclic naming ─────────────────────────────────────────────────
         private string[] NameCyclicMolecule()
         {
