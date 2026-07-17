@@ -341,6 +341,11 @@ namespace OrganicNamer.Core
             }
             return indexes;
         }
+        // IUPAC alphabetisation key: compare complete substituent names by their letters
+        // only — "(1-methylethyl)" sorts under "m", "(hydroxymethyl)" under "h". Also
+        // neutralises the '|' elision markers in raw spec words ("meth|ayl" → "methayl").
+        private static string AlphaKey(string name) =>
+            new string(name.Where(char.IsLetter).ToArray());
         private string NameSegment(Dictionary<string, List<int>> namesAndCarbonNumbers)
         {
             List<(string numbers, string name)> names = new List<(string, string)>();
@@ -362,7 +367,8 @@ namespace OrganicNamer.Core
                 numbers += numericalPrefix;
                 names.Add((numbers, name));
             }
-            names = names.OrderBy(x => x.name).ToList();
+            names = names.OrderBy(x => AlphaKey(x.name), StringComparer.Ordinal)
+                         .ThenBy(x => x.name, StringComparer.Ordinal).ToList();
             string nameSegment = "";
             for (int i = 0; i < names.Count; i++)
             {
