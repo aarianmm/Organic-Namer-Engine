@@ -123,6 +123,16 @@ def attach_nitrile(atoms, attach_to):
     return c
 
 
+def attach_nitro(atoms, attach_to):
+    """Attach -NO2 in the accepted input convention: hypervalent neutral
+    N(=O)(=O), single N-C bond (no charge fields in the schema)."""
+    n = add_atom(atoms, "N")
+    bond(atoms, attach_to, n)
+    attach_atom(atoms, n, "O", order=2)
+    attach_atom(atoms, n, "O", order=2)
+    return n
+
+
 def attach_vinyl(atoms, attach_to):
     """Attach -CH=CH2."""
     c1 = add_atom(atoms, "C")

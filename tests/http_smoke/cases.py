@@ -16,7 +16,7 @@ from builders import (
     new_atoms, add_atom, bond, carbon_ring, benzene_ring,
     attach_chain, attach_atom, attach_branch, attach_hydroxymethyl,
     attach_chloromethyl, attach_carboxyl, attach_acyl, attach_nitrile,
-    attach_vinyl, ring_with_chain_listed_first, payload,
+    attach_vinyl, attach_nitro, ring_with_chain_listed_first, payload,
 )
 
 
@@ -663,6 +663,292 @@ def _trimethylamine():
 
 CASES["trimethylamine_should_reject"] = reject(payload(_trimethylamine()))
 CASES["dimethyl_sulfide_should_reject"] = reject(payload(_bridged(1, 1, "S")))
+
+# ── Wave 3 / G2: pattern strictness - everything near-nitro still rejects ──
+def _charge_separated_nitro():
+    a = new_atoms()
+    c = add_atom(a, "C")
+    n = add_atom(a, "N")
+    bond(a, c, n)
+    attach_atom(a, n, "O", order=2)
+    attach_atom(a, n, "O", order=1)   # single-bonded O: NOT the accepted form
+    return a
+
+CASES["charge_separated_nitro_should_reject"] = reject(payload(_charge_separated_nitro()))
+
+def _nitrosomethane():
+    a = new_atoms()
+    c = add_atom(a, "C")
+    n = add_atom(a, "N")
+    bond(a, c, n)
+    attach_atom(a, n, "O", order=2)
+    return a
+
+CASES["nitroso_should_reject"] = reject(payload(_nitrosomethane()))
+
+def _methyl_nitrite():                 # C-O-N=O
+    a = new_atoms()
+    c = add_atom(a, "C")
+    o = add_atom(a, "O")
+    bond(a, c, o)
+    n = add_atom(a, "N")
+    bond(a, o, n)
+    attach_atom(a, n, "O", order=2)
+    return a
+
+CASES["methyl_nitrite_should_reject"] = reject(payload(_methyl_nitrite()))
+
+def _methyl_nitrate():                 # C-O-NO2 (N has no C neighbour)
+    a = new_atoms()
+    c = add_atom(a, "C")
+    o = add_atom(a, "O")
+    bond(a, c, o)
+    n = add_atom(a, "N")
+    bond(a, o, n)
+    attach_atom(a, n, "O", order=2)
+    attach_atom(a, n, "O", order=2)
+    return a
+
+CASES["methyl_nitrate_should_reject"] = reject(payload(_methyl_nitrate()))
+
+def _dimethyl_peroxide():              # heteroatom-heteroatom throw intact: O-O
+    a = new_atoms()
+    c1 = add_atom(a, "C")
+    o1 = add_atom(a, "O")
+    bond(a, c1, o1)
+    o2 = add_atom(a, "O")
+    bond(a, o1, o2)
+    c2 = add_atom(a, "C")
+    bond(a, o2, c2)
+    return a
+
+CASES["dimethyl_peroxide_should_reject"] = reject(payload(_dimethyl_peroxide()))
+
+def _dimethylhydrazine():              # heteroatom-heteroatom throw intact: N-N
+    a = new_atoms()
+    c1 = add_atom(a, "C")
+    n1 = add_atom(a, "N")
+    bond(a, c1, n1)
+    n2 = add_atom(a, "N")
+    bond(a, n1, n2)
+    c2 = add_atom(a, "C")
+    bond(a, n2, c2)
+    return a
+
+CASES["nn_dimethylhydrazine_should_reject"] = reject(payload(_dimethylhydrazine()))
+
+def _nitrogen_dioxide():               # NO2 with no carbon
+    a = new_atoms()
+    n = add_atom(a, "N")
+    attach_atom(a, n, "O", order=2)
+    attach_atom(a, n, "O", order=2)
+    return a
+
+CASES["nitrogen_dioxide_should_reject"] = reject(payload(_nitrogen_dioxide()))
+
+def _pentavalent_carbon():             # ValidateValences: deliberate rejection now
+    a = new_atoms()
+    c = add_atom(a, "C")
+    for _ in range(5):
+        attach_chain(a, c, 1)
+    return a
+
+CASES["pentavalent_carbon_should_reject"] = reject(payload(_pentavalent_carbon()))
+
+def _overbonded_nitro_oxygen():        # terminal-O check: O bridging onward
+    a = new_atoms()
+    c = add_atom(a, "C")
+    n = add_atom(a, "N")
+    bond(a, c, n)
+    attach_atom(a, n, "O", order=2)
+    o2 = add_atom(a, "O")
+    bond(a, n, o2, 2)
+    c2 = add_atom(a, "C")
+    bond(a, o2, c2)                    # over-valent O - must NOT be consumed
+    return a
+
+CASES["overbonded_nitro_oxygen_should_reject"] = reject(payload(_overbonded_nitro_oxygen()))
+
+# ── Wave 3 / E4: nitro positives ──
+def _nitrobenzene(pattern="A"):
+    a = benzene_ring(pattern)
+    attach_nitro(a, 0)
+    return a
+
+CASES["nitrobenzene"] = exact(payload(_nitrobenzene()), "nitrobenzene")
+CASES["nitrobenzene_kekule_b"] = exact(payload(_nitrobenzene("B")), "nitrobenzene")
+
+def _nitrophenol(pos):
+    a = benzene_ring()
+    attach_atom(a, 0, "O")
+    attach_nitro(a, pos)
+    return a
+
+CASES["2_nitrophenol"] = exact(payload(_nitrophenol(1)), "2-nitrophenol")
+CASES["4_nitrophenol"] = exact(payload(_nitrophenol(3)), "4-nitrophenol")
+
+def _246_trinitrophenol():
+    a = benzene_ring()
+    attach_atom(a, 0, "O")
+    for p in (1, 3, 5):
+        attach_nitro(a, p)
+    return a
+
+CASES["246_trinitrophenol"] = exact(payload(_246_trinitrophenol()), "2,4,6-trinitrophenol")
+
+def _3_nitrobenzoic_acid():
+    a = benzene_ring()
+    attach_carboxyl(a, 0)
+    attach_nitro(a, 2)
+    return a
+
+CASES["3_nitrobenzoic_acid"] = exact(payload(_3_nitrobenzoic_acid()), "3-nitrobenzoic acid")
+
+def _3_nitrobenzaldehyde():
+    a = benzene_ring()
+    attach_acyl(a, 0)                  # -CHO
+    attach_nitro(a, 2)
+    return a
+
+CASES["3_nitrobenzaldehyde"] = exact(payload(_3_nitrobenzaldehyde()), "3-nitrobenzaldehyde")
+
+def _4_nitrophenylamine():             # real NH2 = parent; nitro N = prefix (the
+    a = benzene_ring()                 # degree-aware discrimination proof)
+    attach_atom(a, 0, "N")
+    attach_nitro(a, 3)
+    return a
+
+CASES["4_nitrophenylamine"] = exact(payload(_4_nitrophenylamine()), "4-nitrophenylamine")
+
+def _dinitrobenzene(pos):
+    a = benzene_ring()
+    attach_nitro(a, 0)
+    attach_nitro(a, pos)
+    return a
+
+CASES["12_dinitrobenzene"] = exact(payload(_dinitrobenzene(1)), "1,2-dinitrobenzene")
+CASES["14_dinitrobenzene"] = exact(payload(_dinitrobenzene(3)), "1,4-dinitrobenzene")
+
+def _trinitrotoluene():
+    a = benzene_ring()
+    attach_chain(a, 0, 1)
+    for p in (1, 3, 5):
+        attach_nitro(a, p)
+    return a
+
+# Systematic form, NOT "2,4,6-trinitromethylbenzene" - design ruling R6.
+# Lowest-locants-as-a-set picks {1,2,3,5} over {1,2,4,6}, so methyl lands at
+# 2 rather than 1 - matching TNT's actual systematic name, not the plan's
+# predicted "1-methyl-2,4,6-trinitrobenzene" (a locant tie-break error in the
+# design doc, verified against real IUPAC nomenclature on implementation).
+CASES["trinitrotoluene_systematic"] = exact(
+    payload(_trinitrotoluene()), "2-methyl-1,3,5-trinitrobenzene")
+
+def _nitrocyclohexane():
+    a = carbon_ring(6)
+    attach_nitro(a, 0)
+    return a
+
+CASES["nitrocyclohexane"] = exact(payload(_nitrocyclohexane()), "nitrocyclohexane")
+
+def _1_methyl_2_nitrocyclohexane():
+    a = carbon_ring(6)
+    attach_chain(a, 0, 1)
+    attach_nitro(a, 1)
+    return a
+
+CASES["1_methyl_2_nitrocyclohexane"] = exact(
+    payload(_1_methyl_2_nitrocyclohexane()), "1-methyl-2-nitrocyclohexane")
+
+def _2_nitropropane():
+    a = new_atoms()
+    c0 = add_atom(a, "C")
+    c1 = add_atom(a, "C")
+    bond(a, c0, c1)
+    c2 = add_atom(a, "C")
+    bond(a, c1, c2)
+    attach_nitro(a, c1)
+    return a
+
+CASES["2_nitropropane"] = exact(payload(_2_nitropropane()), "2-nitropropane")
+
+def _22_dinitropropane():
+    a = new_atoms()
+    c0 = add_atom(a, "C")
+    c1 = add_atom(a, "C")
+    bond(a, c0, c1)
+    c2 = add_atom(a, "C")
+    bond(a, c1, c2)
+    attach_nitro(a, c1)
+    attach_nitro(a, c1)
+    return a
+
+CASES["22_dinitropropane"] = exact(payload(_22_dinitropropane()), "2,2-dinitropropane")
+
+def _nitromethane():
+    a = new_atoms()
+    c = add_atom(a, "C")
+    attach_nitro(a, c)
+    return a
+
+# House redundant-locant style (cf. 2-methylpropan-1-al).
+CASES["nitromethane"] = exact(payload(_nitromethane()), "1-nitromethane")
+
+# Hypervalent-N FillImplicitHydrogens pin-down (master-plan requirement): no
+# client-side H fill - the API's own filler must add 3 H to C and NONE to N.
+def _nitromethane_implicit_h():
+    a = new_atoms()
+    c = add_atom(a, "C")
+    attach_nitro(a, c)
+    return {"atoms": a, "specificationSet": "AllGroups"}   # note: no payload()/fill
+
+CASES["nitromethane_implicit_h"] = exact(_nitromethane_implicit_h(), "1-nitromethane")
+
+def _3_nitropropanoic_acid():          # merge-integrity proof: COOH merge with a
+    a = new_atoms()                    # PolyatomicGroup elsewhere in the molecule
+    c0 = add_atom(a, "C")
+    c1 = add_atom(a, "C")
+    bond(a, c0, c1)
+    c2 = add_atom(a, "C")
+    bond(a, c1, c2)
+    attach_atom(a, c0, "O", order=2)
+    attach_atom(a, c0, "O")
+    attach_nitro(a, c2)
+    return a
+
+CASES["3_nitropropanoic_acid"] = exact(
+    payload(_3_nitropropanoic_acid()), "3-nitropropan-1-oic acid")
+
+# ── Wave 3 / E4: nitro negatives (capability gates that must hold with naming enabled) ──
+CASES["nitrobenzene_hydrocarbons_spec_should_reject"] = reject(
+    payload(_nitrobenzene(), spec="Hydrocarbons"))         # spec gate, ring path
+
+CASES["2_nitropropane_hydrocarbons_spec_should_reject"] = reject(
+    payload(_2_nitropropane(), spec="Hydrocarbons"))       # spec gate, chain path (CheckGroups)
+
+def _nitromethylbenzene():             # ring-CH2-NO2 composite substituent
+    a = benzene_ring()
+    c = add_atom(a, "C")
+    bond(a, 0, c)
+    attach_nitro(a, c)
+    return a
+
+CASES["nitromethylbenzene_should_reject"] = reject(payload(_nitromethylbenzene()))
+
+def _methyl_nitroethanoate():          # nitro on a bridged (ester) side
+    a = new_atoms()
+    c_acid = add_atom(a, "C")
+    attach_atom(a, c_acid, "O", order=2)
+    o_bridge = add_atom(a, "O")
+    bond(a, c_acid, o_bridge)
+    c_methyl = add_atom(a, "C")
+    bond(a, o_bridge, c_methyl)
+    c_alpha = add_atom(a, "C")
+    bond(a, c_acid, c_alpha)
+    attach_nitro(a, c_alpha)
+    return a
+
+CASES["methyl_nitroethanoate_should_reject"] = reject(payload(_methyl_nitroethanoate()))
 
 # ── Adversarial / malformed input: must not crash the server ──
 CASES["empty_atoms_list"] = no_crash({"atoms": [], "specificationSet": "AllGroups"})

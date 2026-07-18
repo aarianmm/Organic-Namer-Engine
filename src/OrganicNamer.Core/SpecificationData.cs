@@ -42,6 +42,7 @@ namespace OrganicNamer.Core
             spec.prefixOnly.Add("C-Cl", "chloro");
             spec.prefixOnly.Add("C-Br", "bromo");
             spec.prefixOnly.Add("C-I", "iodo");
+            spec.prefixOnly.Add("NO2", "nitro");   // Wave 3 / E4 (AllGroups only - the spec gate)
 
             spec.middle.Add("C=C", ("en|e", 2));
             spec.middle.Add("C≡C", ("yn|e", 1));
