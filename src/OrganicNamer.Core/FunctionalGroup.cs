@@ -82,4 +82,20 @@
             return carbonIndexes.Contains(index);
         }
     }
+    public class PolyatomicGroup : FunctionalGroup //G2 (Wave 3): multi-heteroatom pattern, e.g. NO2
+    {
+        int[] memberIndexes; //the pattern's heteroatoms (nitro: N, O, O) - NOT the attached carbon
+        string formula;
+        public override string GroupFormula { get { return formula; } }
+        public IReadOnlyList<int> MemberIndexes { get { return memberIndexes; } }
+        public PolyatomicGroup(string formula, int carbonIndex, int[] memberIndexes) : base("", 1, carbonIndex)
+        {
+            this.formula = formula;
+            this.memberIndexes = memberIndexes;
+        }
+        override public bool Involves(int index)
+        {
+            return mainIndex == index || memberIndexes.Contains(index);
+        }
+    }
 }
