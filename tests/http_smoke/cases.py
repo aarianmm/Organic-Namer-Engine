@@ -16,7 +16,7 @@ from builders import (
     new_atoms, add_atom, bond, carbon_ring, benzene_ring,
     attach_chain, attach_atom, attach_branch, attach_hydroxymethyl,
     attach_chloromethyl, attach_carboxyl, attach_acyl, attach_nitrile,
-    attach_vinyl, ring_with_chain_listed_first, payload,
+    attach_vinyl, attach_nitro, ring_with_chain_listed_first, payload,
 )
 
 
@@ -663,6 +663,111 @@ def _trimethylamine():
 
 CASES["trimethylamine_should_reject"] = reject(payload(_trimethylamine()))
 CASES["dimethyl_sulfide_should_reject"] = reject(payload(_bridged(1, 1, "S")))
+
+# ── Wave 3 / G2: pattern strictness - everything near-nitro still rejects ──
+def _charge_separated_nitro():
+    a = new_atoms()
+    c = add_atom(a, "C")
+    n = add_atom(a, "N")
+    bond(a, c, n)
+    attach_atom(a, n, "O", order=2)
+    attach_atom(a, n, "O", order=1)   # single-bonded O: NOT the accepted form
+    return a
+
+CASES["charge_separated_nitro_should_reject"] = reject(payload(_charge_separated_nitro()))
+
+def _nitrosomethane():
+    a = new_atoms()
+    c = add_atom(a, "C")
+    n = add_atom(a, "N")
+    bond(a, c, n)
+    attach_atom(a, n, "O", order=2)
+    return a
+
+CASES["nitroso_should_reject"] = reject(payload(_nitrosomethane()))
+
+def _methyl_nitrite():                 # C-O-N=O
+    a = new_atoms()
+    c = add_atom(a, "C")
+    o = add_atom(a, "O")
+    bond(a, c, o)
+    n = add_atom(a, "N")
+    bond(a, o, n)
+    attach_atom(a, n, "O", order=2)
+    return a
+
+CASES["methyl_nitrite_should_reject"] = reject(payload(_methyl_nitrite()))
+
+def _methyl_nitrate():                 # C-O-NO2 (N has no C neighbour)
+    a = new_atoms()
+    c = add_atom(a, "C")
+    o = add_atom(a, "O")
+    bond(a, c, o)
+    n = add_atom(a, "N")
+    bond(a, o, n)
+    attach_atom(a, n, "O", order=2)
+    attach_atom(a, n, "O", order=2)
+    return a
+
+CASES["methyl_nitrate_should_reject"] = reject(payload(_methyl_nitrate()))
+
+def _dimethyl_peroxide():              # heteroatom-heteroatom throw intact: O-O
+    a = new_atoms()
+    c1 = add_atom(a, "C")
+    o1 = add_atom(a, "O")
+    bond(a, c1, o1)
+    o2 = add_atom(a, "O")
+    bond(a, o1, o2)
+    c2 = add_atom(a, "C")
+    bond(a, o2, c2)
+    return a
+
+CASES["dimethyl_peroxide_should_reject"] = reject(payload(_dimethyl_peroxide()))
+
+def _dimethylhydrazine():              # heteroatom-heteroatom throw intact: N-N
+    a = new_atoms()
+    c1 = add_atom(a, "C")
+    n1 = add_atom(a, "N")
+    bond(a, c1, n1)
+    n2 = add_atom(a, "N")
+    bond(a, n1, n2)
+    c2 = add_atom(a, "C")
+    bond(a, n2, c2)
+    return a
+
+CASES["nn_dimethylhydrazine_should_reject"] = reject(payload(_dimethylhydrazine()))
+
+def _nitrogen_dioxide():               # NO2 with no carbon
+    a = new_atoms()
+    n = add_atom(a, "N")
+    attach_atom(a, n, "O", order=2)
+    attach_atom(a, n, "O", order=2)
+    return a
+
+CASES["nitrogen_dioxide_should_reject"] = reject(payload(_nitrogen_dioxide()))
+
+def _pentavalent_carbon():             # ValidateValences: deliberate rejection now
+    a = new_atoms()
+    c = add_atom(a, "C")
+    for _ in range(5):
+        attach_chain(a, c, 1)
+    return a
+
+CASES["pentavalent_carbon_should_reject"] = reject(payload(_pentavalent_carbon()))
+
+def _overbonded_nitro_oxygen():        # terminal-O check: O bridging onward
+    a = new_atoms()
+    c = add_atom(a, "C")
+    n = add_atom(a, "N")
+    bond(a, c, n)
+    attach_atom(a, n, "O", order=2)
+    o2 = add_atom(a, "O")
+    bond(a, n, o2, 2)
+    c2 = add_atom(a, "C")
+    bond(a, o2, c2)                    # over-valent O - must NOT be consumed
+    return a
+
+CASES["overbonded_nitro_oxygen_should_reject"] = reject(payload(_overbonded_nitro_oxygen()))
 
 # ── Adversarial / malformed input: must not crash the server ──
 CASES["empty_atoms_list"] = no_crash({"atoms": [], "specificationSet": "AllGroups"})
