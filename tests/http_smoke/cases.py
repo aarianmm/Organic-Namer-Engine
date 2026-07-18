@@ -15,8 +15,8 @@ See Algorithm-Extension-Plan.md for the phase-by-phase design this exercises.
 from builders import (
     new_atoms, add_atom, bond, carbon_ring, benzene_ring,
     attach_chain, attach_atom, attach_branch, attach_hydroxymethyl,
-    attach_chloromethyl, attach_acyl, attach_nitrile, attach_vinyl,
-    ring_with_chain_listed_first, payload,
+    attach_chloromethyl, attach_carboxyl, attach_acyl, attach_nitrile,
+    attach_vinyl, ring_with_chain_listed_first, payload,
 )
 
 
@@ -178,7 +178,7 @@ def _benzyl_alcohol():
     attach_hydroxymethyl(a, 0)
     return a
 
-CASES["benzyl_alcohol_should_reject"] = reject(payload(_benzyl_alcohol()))
+CASES["phenylmethanol"] = exact(payload(_benzyl_alcohol()), "phenylmethanol")
 
 def _styrene():
     a = benzene_ring("A")
@@ -188,7 +188,7 @@ def _styrene():
     bond(a, c6, c7, 2)
     return a
 
-CASES["styrene_should_reject"] = reject(payload(_styrene()))
+CASES["ethenylbenzene"] = exact(payload(_styrene()), "ethenylbenzene")
 
 def _isopropylbenzene():
     a = benzene_ring("A")
@@ -326,6 +326,82 @@ def _cyanomethylbenzene():            # carbon-subsuming tip (Q3 gate)
     return a
 
 CASES["cyanomethylbenzene_should_reject"] = reject(payload(_cyanomethylbenzene()))
+
+# ── Wave 2.c: retained aromatic parent names (G4/E1) ──
+def _mono_benzene(attacher, *args, **kw):
+    a = benzene_ring("A")
+    attacher(a, 0, *args, **kw)
+    return a
+
+CASES["phenol"]           = exact(payload(_mono_benzene(attach_atom, "O")), "phenol")
+CASES["phenylamine"]      = exact(payload(_mono_benzene(attach_atom, "N")), "phenylamine")
+CASES["benzoic_acid"]     = exact(payload(_mono_benzene(attach_carboxyl)), "benzoic acid")
+CASES["benzaldehyde"]     = exact(payload(_mono_benzene(attach_acyl)), "benzaldehyde")
+CASES["benzamide"]        = exact(payload(_mono_benzene(attach_acyl, terminal="N")), "benzamide")
+CASES["benzoyl_chloride"] = exact(payload(_mono_benzene(attach_acyl, terminal="Cl")), "benzoyl chloride")
+CASES["benzonitrile"]     = exact(payload(_mono_benzene(attach_nitrile)), "benzonitrile")
+CASES["phenylethanone"]   = exact(payload(_mono_benzene(attach_acyl, tail_len=1)), "phenylethanone")
+
+def _phenol_plus(pos, attacher, *args):
+    a = benzene_ring("A")
+    attach_atom(a, 0, "O")
+    attacher(a, pos, *args)
+    return a
+
+CASES["2_chlorophenol"]         = exact(payload(_phenol_plus(1, attach_atom, "Cl")), "2-chlorophenol")
+CASES["2_chlorophenol_reverse"] = exact(payload(_phenol_plus(5, attach_atom, "Cl")), "2-chlorophenol")  # anchor direction choice
+CASES["4_bromophenol"]          = exact(payload(_phenol_plus(3, attach_atom, "Br")), "4-bromophenol")
+CASES["4_aminophenol"]          = exact(payload(_phenol_plus(3, attach_atom, "N")), "4-aminophenol")    # OH outranks NH2
+
+def _2_hydroxybenzoic_acid():
+    a = benzene_ring("A")
+    attach_carboxyl(a, 0)
+    attach_atom(a, 1, "O")
+    return a
+
+CASES["2_hydroxybenzoic_acid"] = exact(payload(_2_hydroxybenzoic_acid()), "2-hydroxybenzoic acid")  # COOH outranks OH; OH demotes
+
+def _3_methylbenzaldehyde():
+    a = benzene_ring("A")
+    attach_acyl(a, 0)
+    attach_chain(a, 2, 1)
+    return a
+
+CASES["3_methylbenzaldehyde"] = exact(payload(_3_methylbenzaldehyde()), "3-methylbenzaldehyde")
+
+def _benzene_12_diol():
+    a = benzene_ring("A")
+    attach_atom(a, 0, "O")
+    attach_atom(a, 1, "O")
+    return a
+
+CASES["benzene_12_diol_should_reject"] = reject(payload(_benzene_12_diol()))  # D7
+
+def _benzene_14_dicarboxylic():
+    a = benzene_ring("A")
+    attach_carboxyl(a, 0)
+    attach_carboxyl(a, 3)
+    return a
+
+CASES["benzene_dicarboxylic_should_reject"] = reject(payload(_benzene_14_dicarboxylic()))
+
+def _chloro_benzyl_alcohol():         # chain-parent pattern + extra sub → gate
+    a = benzene_ring("A")
+    attach_hydroxymethyl(a, 0)
+    attach_atom(a, 3, "Cl")
+    return a
+
+CASES["chloro_benzyl_alcohol_should_reject"] = reject(payload(_chloro_benzyl_alcohol()))
+
+def _ethynylbenzene():                # C≡C is not the styrene pattern
+    a = benzene_ring("A")
+    c1 = add_atom(a, "C")
+    bond(a, 0, c1)
+    c2 = add_atom(a, "C")
+    bond(a, c1, c2, 3)
+    return a
+
+CASES["ethynylbenzene_should_reject"] = reject(payload(_ethynylbenzene()))
 
 # ── Phase 3: bridging heteroatoms (ethers, esters, secondary amines) ──
 def _bridged(len_a, len_b, bridge_element):

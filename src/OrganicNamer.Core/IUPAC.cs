@@ -786,6 +786,134 @@ namespace OrganicNamer.Core
             return best;
         }
 
+        // ── Wave 2 / G4: aromatic substituent classification ──────────────────────
+        private sealed class AromaticSubstituent
+        {
+            public int RingPosition;
+            public string? ParentFormula;   // set for retained-parent candidates
+            public string? ParentName;      // "phenol", "benzoic acid", ...
+            public int Priority;            // spec suffix priority (parent candidates only)
+            public string? ChainParentName; // "phenylmethanol" / "phenylethanone" / "ethenylbenzene"
+            public string? PrefixName;      // G1 name (simple substituents only)
+        }
+
+        private AromaticSubstituent ClassifyAromaticSubstituent(
+            List<int> ring, (int ringPosition, int atomIndex, bool isCarbon) sub, HashSet<int> ringSet)
+        {
+            int ringCarbon = ring[sub.ringPosition];
+
+            if (!sub.isCarbon)
+            {
+                // Terminal, single-bonded heteroatom with a retained parent (O → phenol,
+                // N → phenylamine). Candidacy also requires the live spec to rank the
+                // group — under the Hydrocarbons spec nothing ranks, so the input falls
+                // through to G1, which rejects cleanly.
+                if (atoms.BondOrder(ringCarbon, sub.atomIndex) == 1
+                    && !atoms.AdjacentAtoms(sub.atomIndex).Any(n => !ringSet.Contains(n)))
+                {
+                    string formula = "C-" + atoms.Atoms[sub.atomIndex].Symbol;
+                    if (SpecificationData.AromaticHeteroatomParentNames.ContainsKey(formula)
+                        && PriorityForFormula(formula) >= 0)
+                        return new AromaticSubstituent
+                        {
+                            RingPosition = sub.ringPosition,
+                            ParentFormula = formula,
+                            ParentName = SpecificationData.AromaticHeteroatomParentNames[formula],
+                            Priority = PriorityForFormula(formula)
+                        };
+                }
+                return Simple();
+            }
+
+            List<int> subAtoms = atoms.CollectReachable(sub.atomIndex, ringSet);
+
+            string? carbonParent = MatchCarbonParentFormula(sub.atomIndex, subAtoms);
+            if (carbonParent != null && PriorityForFormula(carbonParent) >= 0)
+                return new AromaticSubstituent
+                {
+                    RingPosition = sub.ringPosition,
+                    ParentFormula = carbonParent,
+                    ParentName = SpecificationData.AromaticCarbonParentNames[carbonParent],
+                    Priority = PriorityForFormula(carbonParent)
+                };
+
+            string? chainParent = MatchChainParentPattern(sub.atomIndex, subAtoms);
+            if (chainParent != null)
+                return new AromaticSubstituent
+                { RingPosition = sub.ringPosition, ChainParentName = chainParent };
+
+            return Simple();
+
+            AromaticSubstituent Simple() => new AromaticSubstituent
+            {
+                RingPosition = sub.ringPosition,
+                PrefixName = NameSubstituent(ringCarbon, sub.atomIndex, ringSet,
+                                             allowSuffixCapableTip: false) // throws if unnameable
+            };
+        }
+
+        // A carbon parent is a ONE-carbon substituent whose only (non-CC) group is one
+        // of the carbon-parent formulas, post-merge. Valence makes the shapes exact:
+        // a COOH carbon has no spare bond, and a CHO carbon carrying Cl instead of H
+        // has already merged into COCl.
+        private string? MatchCarbonParentFormula(int attachIndex, List<int> subAtoms)
+        {
+            if (subAtoms.Count(i => atoms.Atoms[i].Name == "Carbon") != 1)
+                return null;
+            var attachGroups = groups
+                .Where(g => !(g is CarbonCarbonGroup) && g.MainIndex == attachIndex).ToList();
+            if (attachGroups.Count != 1)
+                return null;
+            string formula = attachGroups[0].GroupFormula;
+            return SpecificationData.AromaticCarbonParentNames.ContainsKey(formula) ? formula : null;
+        }
+
+        // G4.4: whole-molecule chain-parent patterns. Exact-shape matches only —
+        // anything similar-but-not-equal falls through to G1, which throws.
+        private string? MatchChainParentPattern(int attachIndex, List<int> subAtoms)
+        {
+            int carbonCount = subAtoms.Count(i => atoms.Atoms[i].Name == "Carbon");
+            var heteroGroups = groups
+                .Where(g => !(g is CarbonCarbonGroup) && subAtoms.Contains(g.MainIndex)).ToList();
+            bool hasCC = groups.Any(g => g is CarbonCarbonGroup && subAtoms.Any(g.Involves));
+
+            // ring–CH2OH → phenylmethanol
+            if (carbonCount == 1 && subAtoms.Count == 2 && !hasCC
+                && heteroGroups.Count == 1 && heteroGroups[0].GroupFormula == "C-O")
+                return SpecificationData.AromaticChainParentNames["CH2OH"];
+
+            // ring–C(=O)CH3 → phenylethanone (the O's valence is full, so the second
+            // carbon can only be bonded to the attach carbon — no extra check needed)
+            if (carbonCount == 2 && subAtoms.Count == 3 && !hasCC
+                && heteroGroups.Count == 1 && heteroGroups[0].GroupFormula == "C=O"
+                && heteroGroups[0].MainIndex == attachIndex)
+                return SpecificationData.AromaticChainParentNames["COCH3"];
+
+            // ring–CH=CH2 → ethenylbenzene
+            if (carbonCount == 2 && subAtoms.Count == 2 && heteroGroups.Count == 0
+                && groups.Any(g => g is CarbonCarbonGroup cc && cc.GroupFormula == "C=C"
+                                  && subAtoms.Contains(cc.MainIndex) && subAtoms.Contains(cc.OtherCarbonIndex)))
+                return SpecificationData.AromaticChainParentNames["CHCH2"];
+
+            return null;
+        }
+
+        // Rank / demote helpers — single source of truth is the live spec.
+        private int PriorityForFormula(string formula)
+        {
+            if (spec.prefixOrSuffix.ContainsKey(formula)) return spec.prefixOrSuffix[formula].priority;
+            if (spec.endDependentPrefixOrSuffix.ContainsKey(formula)) return spec.endDependentPrefixOrSuffix[formula].end.priority; // C=O → 6
+            return -1;
+        }
+
+        private string PrefixForFormula(string formula)
+        {
+            if (spec.prefixOnly.ContainsKey(formula)) return spec.prefixOnly[formula];
+            if (spec.prefixOrSuffix.ContainsKey(formula)) return spec.prefixOrSuffix[formula].prefix;      // hydroxy, amino, carboxy
+            if (spec.endDependentPrefixOrSuffix.ContainsKey(formula)) return spec.endDependentPrefixOrSuffix[formula].end.prefix; // formyl
+            throw new Exception($"No prefix name available for group '{formula}'");
+        }
+
         // ── Phase 1: Cyclic naming ─────────────────────────────────────────────────
         private string[] NameCyclicMolecule()
         {
@@ -838,20 +966,51 @@ namespace OrganicNamer.Core
             if (substituents.Count > 2)
                 throw new Exception("Benzene with more than 2 substituents is not supported");
 
-            var named = substituents
-                .Select(s => (s.ringPosition,
-                              name: NameSubstituent(ring[s.ringPosition], s.atomIndex, ringSet,
-                                                    allowSuffixCapableTip: false)))
-                .ToList();
+            // ── G4: classify every substituent before naming anything ──
+            List<AromaticSubstituent> classified = substituents
+                .Select(s => ClassifyAromaticSubstituent(ring, s, ringSet)).ToList();
 
-            if (named.Count == 1)
-                return new[] { FormatName(named[0].name + "benzene") };
-                // e.g. "chlorobenzene", "methylbenzene"
+            // G4.4: whole-molecule chain-parent patterns — mono-substituted only.
+            // With extra substituents the correct name needs chain-parent machinery
+            // (G3 non-goal), so reject (capability gate).
+            if (classified.Count == 1 && classified[0].ChainParentName != null)
+                return new[] { classified[0].ChainParentName! };
+            if (classified.Any(c => c.ChainParentName != null))
+                throw new Exception("Rings carrying a chain-parent substituent plus other substituents are not supported");
 
-            // 2 substituents: number to give lowest locants
-            (int[] numbering, List<string> subNames) = FindBestRingNumbering(ring, named);
-            string prefixName = BuildRingPrefixName(numbering, subNames);
-            return new[] { FormatName(prefixName + "benzene") };
+            // G4.1/G4.2: retained-parent selection + anchored numbering.
+            var parents = classified.Where(c => c.ParentFormula != null).ToList();
+            if (parents.Count > 0)
+            {
+                int bestPriority = parents.Max(p => p.Priority);
+                var top = parents.Where(p => p.Priority == bestPriority).ToList();
+                if (top.Count > 1) // benzene-1,2-diol etc. — di-suffix machinery doesn't exist (D7)
+                    throw new Exception("Multiple substituents of the principal group class are not supported");
+
+                AromaticSubstituent parent = top[0];
+
+                var rest = classified.Where(c => !ReferenceEquals(c, parent))
+                    .Select(c => (c.RingPosition,
+                                  name: c.ParentFormula != null
+                                      ? FormatName(PrefixForFormula(c.ParentFormula)) // demoted parent → prefix
+                                      : c.PrefixName!))
+                    .ToList();
+
+                if (rest.Count == 0)
+                    return new[] { parent.ParentName! };            // "phenol", "benzoic acid"
+
+                (int[] numbering, List<string> subNames) =
+                    FindBestRingNumbering(ring, rest, anchorPos: parent.RingPosition);
+                return new[] { FormatName(BuildRingPrefixName(numbering, subNames) + parent.ParentName) };
+            }
+
+            // No retained parent — generic prefix flow, exactly as before.
+            if (classified.Count == 1)
+                return new[] { FormatName(classified[0].PrefixName! + "benzene") };
+
+            var plain = classified.Select(c => (c.RingPosition, name: c.PrefixName!)).ToList();
+            (int[] num, List<string> names) = FindBestRingNumbering(ring, plain);
+            return new[] { FormatName(BuildRingPrefixName(num, names) + "benzene") };
         }
         private (int[] bestNumbering, List<string> subNames) FindBestRingNumbering(
             List<int> ring,

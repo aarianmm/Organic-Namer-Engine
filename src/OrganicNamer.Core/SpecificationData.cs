@@ -95,5 +95,37 @@ namespace OrganicNamer.Core
 
             return spec;
         }
+
+        // ── Wave 2 / G4: retained aromatic parent names (E1) ──────────────────────
+        // Board-exact strings (phenylamine, NEVER aniline). Keyed by the substituent's
+        // post-merge group formula. Split hetero-attached vs carbon-attached (D6) so a
+        // C-O TIP group on a carbon substituent (-CH2OH) can never match phenol.
+        // Priorities are NOT stored here — they come from the live namingSpec.
+        public static IReadOnlyDictionary<string, string> AromaticHeteroatomParentNames { get; } =
+            new Dictionary<string, string>
+            {
+                { "C-O", "phenol" },
+                { "C-N", "phenylamine" },
+            };
+
+        public static IReadOnlyDictionary<string, string> AromaticCarbonParentNames { get; } =
+            new Dictionary<string, string>
+            {
+                { "COOH", "benzoic acid" },
+                { "COCl", "benzoyl chloride" },
+                { "CON",  "benzamide" },       // primary aromatic amide — ring-substituent
+                                               // pattern, owned here (secondary = E6)
+                { "C≡N",  "benzonitrile" },
+                { "C=O",  "benzaldehyde" },
+            };
+
+        // G4.4: whole-molecule chain-parent names — mono-substituted benzene only.
+        public static IReadOnlyDictionary<string, string> AromaticChainParentNames { get; } =
+            new Dictionary<string, string>
+            {
+                { "CH2OH", "phenylmethanol" },
+                { "COCH3", "phenylethanone" },
+                { "CHCH2", "ethenylbenzene" },
+            };
     }
 }
