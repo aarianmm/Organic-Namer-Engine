@@ -82,7 +82,13 @@
             foreach (var atom in atoms)
             {
                 var (name, valency) = periodicTable[atom.Element];
-                graph.atoms.Add(new Element(atom.Element, name, valency));
+                // Wave 3 (G2): bond storage must hold ALL declared bonds, not just
+                // `valency` of them — a hypervalent nitro N declares 5 bond slots against
+                // valency 3 and would overflow AddHalfBond. Over-valence is then rejected
+                // deliberately in ValidateValences(), where pattern-consumed atoms are
+                // the only exemption.
+                int declaredValency = atom.Bonds.Sum(b => b.Order);
+                graph.atoms.Add(new Element(atom.Element, name, Math.Max(valency, declaredValency)));
             }
 
             // Establish bonds from JSON (uses existing AddFullBond method)
@@ -101,6 +107,7 @@
             graph.ends = graph.FindEnds();
             graph.groups = graph.FindGroups();
             graph.RemoveDuplicateGroups();
+            graph.ValidateValences(); // Wave 3: must run AFTER FindGroups (needs the PolyatomicGroups)
 
             return graph;
         }
@@ -415,9 +422,48 @@
             path.Remove(current); //hit deadend somewhere down stack. backtrack
             return false;
         }
+        // G2 (Wave 3): pattern-based polyatomic group recognition, run BEFORE the
+        // generic per-atom loop in FindGroups. One pattern so far: nitro, accepted
+        // ONLY as the hypervalent neutral form N(=O)(=O) - one N with exactly one
+        // single-bonded C, exactly two double-bonded TERMINAL O, and nothing else.
+        // Matched heteroatoms are returned as the consumed set; the generic loop
+        // (including the heteroatom-heteroatom throw) skips them. Every non-matching
+        // shape (charge-separated nitro, nitroso, nitrite/nitrate esters, N-N,
+        // peroxides) is not consumed and still throws exactly as before.
+        private HashSet<int> FindPolyatomicGroups(List<FunctionalGroup> newGroups)
+        {
+            HashSet<int> consumed = new HashSet<int>();
+            for (int n = 0; n < atoms.Count; n++)
+            {
+                if (atoms[n].Symbol != "N")
+                    continue;
+                int[] neighbours = atoms[n].BondIndexes.Where(x => x >= 0).Distinct().ToArray();
+                if (neighbours.Length != 3) //must be exactly C + O + O (an H neighbour kills the match)
+                    continue;
+                int[] carbons = neighbours.Where(x => atoms[x].Name == "Carbon").ToArray();
+                int[] oxygens = neighbours.Where(x => atoms[x].Name == "Oxygen").ToArray();
+                if (carbons.Length != 1 || oxygens.Length != 2)
+                    continue;
+                if (BondOrder(n, carbons[0]) != 1)
+                    continue;
+                if (oxygens.Any(o => BondOrder(n, o) != 2))
+                    continue;
+                // Terminal-O check: each O bonds to nothing but this N. Not implied by
+                // valence (input valence is unvalidated here) - an adversarial O
+                // bridging onward must not be consumed.
+                if (oxygens.Any(o => atoms[o].BondIndexes.Where(x => x >= 0).Any(x => x != n)))
+                    continue;
+                newGroups.Add(new PolyatomicGroup("NO2", carbons[0], new[] { n, oxygens[0], oxygens[1] }));
+                consumed.Add(n);
+                consumed.Add(oxygens[0]);
+                consumed.Add(oxygens[1]);
+            }
+            return consumed;
+        }
         private List<FunctionalGroup> FindGroups()
         {
             List<FunctionalGroup> newGroups = new List<FunctionalGroup>();
+            HashSet<int> consumed = FindPolyatomicGroups(newGroups); //G2 pattern pass (Wave 3)
             for (int atomIndex = 0; atomIndex < atoms.Count; atomIndex++)
             {
                 Element atom = atoms[atomIndex];
@@ -426,6 +472,8 @@
                     int[] unvisitedBonds = AdjacentAtoms(atomIndex);
                     foreach (int bondIndex in unvisitedBonds)
                     {
+                        if (consumed.Contains(bondIndex))
+                            continue; //pattern atom (nitro N): suppress the loose C-N group (R4)
                         Element bondedAtom = atoms[bondIndex];
                         int order = BondOrder(atomIndex, bondIndex);
                         if (bondedAtom.Name == "Carbon" && order != 1) //two carbons forming double / triple bond
@@ -437,6 +485,12 @@
                             newGroups.Add(new FunctionalGroup(bondedAtom.Symbol, order, atomIndex));
                         }
                     }
+                }
+                else if (consumed.Contains(atomIndex))
+                {
+                    //member of a matched polyatomic pattern: fully described by its
+                    //PolyatomicGroup - skip the heteroatom-heteroatom throw and the
+                    //bridging-atom detection (R4)
                 }
                 else if (atom.Name != "Hydrogen" && AdjacentAtoms(atomIndex, "C").Count() > 0)  //non-carbon atom bonded to some non-carbon atoms
                 {
@@ -460,6 +514,21 @@
                 }
             }
             return newGroups;
+        }
+        // Wave 3 (G2): bond storage is no longer capped at valency (see FromJsonAtoms),
+        // so over-valent input must be rejected explicitly instead of crashing the
+        // array. Atoms consumed as members of a matched polyatomic pattern (the
+        // hypervalent nitro N) are exempt - the pattern already pinned their bonding.
+        private void ValidateValences()
+        {
+            HashSet<int> patternMembers = new HashSet<int>(
+                groups.OfType<PolyatomicGroup>().SelectMany(g => g.MemberIndexes));
+            for (int i = 0; i < atoms.Count; i++)
+            {
+                int usedBonds = atoms[i].BondIndexes.Count(x => x >= 0);
+                if (usedBonds > periodicTable[atoms[i].Symbol].valency && !patternMembers.Contains(i))
+                    throw new Exception($"Atom {i} ({atoms[i].Symbol}) has more bonds than its valency allows");
+            }
         }
         private void RemoveDuplicateGroups() //CarbonCarbonGroups are recorded twice (once for each carbon)
         {
