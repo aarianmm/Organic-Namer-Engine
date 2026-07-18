@@ -93,6 +93,15 @@ def attach_chloromethyl(atoms, attach_to):
     return c1
 
 
+def attach_carboxyl(atoms, attach_to):
+    """Attach -COOH."""
+    c = add_atom(atoms, "C")
+    bond(atoms, attach_to, c)
+    attach_atom(atoms, c, "O", order=2)
+    attach_atom(atoms, c, "O")
+    return c
+
+
 def attach_acyl(atoms, attach_to, tail_len=0, terminal=None, terminal_order=1):
     """Attach -C(=O)R : tail_len carbons after the carbonyl C, and/or a
     terminal heteroatom on the carbonyl C (Cl for -COCl, N for -CONH2)."""
