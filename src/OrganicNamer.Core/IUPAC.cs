@@ -966,20 +966,51 @@ namespace OrganicNamer.Core
             if (substituents.Count > 2)
                 throw new Exception("Benzene with more than 2 substituents is not supported");
 
-            var named = substituents
-                .Select(s => (s.ringPosition,
-                              name: NameSubstituent(ring[s.ringPosition], s.atomIndex, ringSet,
-                                                    allowSuffixCapableTip: false)))
-                .ToList();
+            // ── G4: classify every substituent before naming anything ──
+            List<AromaticSubstituent> classified = substituents
+                .Select(s => ClassifyAromaticSubstituent(ring, s, ringSet)).ToList();
 
-            if (named.Count == 1)
-                return new[] { FormatName(named[0].name + "benzene") };
-                // e.g. "chlorobenzene", "methylbenzene"
+            // G4.4: whole-molecule chain-parent patterns — mono-substituted only.
+            // With extra substituents the correct name needs chain-parent machinery
+            // (G3 non-goal), so reject (capability gate).
+            if (classified.Count == 1 && classified[0].ChainParentName != null)
+                return new[] { classified[0].ChainParentName! };
+            if (classified.Any(c => c.ChainParentName != null))
+                throw new Exception("Rings carrying a chain-parent substituent plus other substituents are not supported");
 
-            // 2 substituents: number to give lowest locants
-            (int[] numbering, List<string> subNames) = FindBestRingNumbering(ring, named);
-            string prefixName = BuildRingPrefixName(numbering, subNames);
-            return new[] { FormatName(prefixName + "benzene") };
+            // G4.1/G4.2: retained-parent selection + anchored numbering.
+            var parents = classified.Where(c => c.ParentFormula != null).ToList();
+            if (parents.Count > 0)
+            {
+                int bestPriority = parents.Max(p => p.Priority);
+                var top = parents.Where(p => p.Priority == bestPriority).ToList();
+                if (top.Count > 1) // benzene-1,2-diol etc. — di-suffix machinery doesn't exist (D7)
+                    throw new Exception("Multiple substituents of the principal group class are not supported");
+
+                AromaticSubstituent parent = top[0];
+
+                var rest = classified.Where(c => !ReferenceEquals(c, parent))
+                    .Select(c => (c.RingPosition,
+                                  name: c.ParentFormula != null
+                                      ? FormatName(PrefixForFormula(c.ParentFormula)) // demoted parent → prefix
+                                      : c.PrefixName!))
+                    .ToList();
+
+                if (rest.Count == 0)
+                    return new[] { parent.ParentName! };            // "phenol", "benzoic acid"
+
+                (int[] numbering, List<string> subNames) =
+                    FindBestRingNumbering(ring, rest, anchorPos: parent.RingPosition);
+                return new[] { FormatName(BuildRingPrefixName(numbering, subNames) + parent.ParentName) };
+            }
+
+            // No retained parent — generic prefix flow, exactly as before.
+            if (classified.Count == 1)
+                return new[] { FormatName(classified[0].PrefixName! + "benzene") };
+
+            var plain = classified.Select(c => (c.RingPosition, name: c.PrefixName!)).ToList();
+            (int[] num, List<string> names) = FindBestRingNumbering(ring, plain);
+            return new[] { FormatName(BuildRingPrefixName(num, names) + "benzene") };
         }
         private (int[] bestNumbering, List<string> subNames) FindBestRingNumbering(
             List<int> ring,
