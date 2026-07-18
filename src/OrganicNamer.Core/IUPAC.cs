@@ -962,10 +962,6 @@ namespace OrganicNamer.Core
             if (substituents.Count == 0)
                 return new[] { "benzene" };
 
-            // Enforce scope limit: ≤2 substituents   // ← DELETE THIS BLOCK IN PHASE D (E3)
-            if (substituents.Count > 2)
-                throw new Exception("Benzene with more than 2 substituents is not supported");
-
             // ── G4: classify every substituent before naming anything ──
             List<AromaticSubstituent> classified = substituents
                 .Select(s => ClassifyAromaticSubstituent(ring, s, ringSet)).ToList();
