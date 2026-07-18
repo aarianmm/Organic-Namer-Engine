@@ -170,7 +170,7 @@ def _trimethylbenzene():
     attach_chain(a, 4, 1)
     return a
 
-CASES["trimethylbenzene_should_reject"] = reject(payload(_trimethylbenzene()))
+CASES["135_trimethylbenzene"] = exact(payload(_trimethylbenzene()), "1,3,5-trimethylbenzene")
 CASES["cyclohexene_should_reject"] = reject(payload(carbon_ring(6, [2, 1, 1, 1, 1, 1])))
 
 def _benzyl_alcohol():
@@ -402,6 +402,50 @@ def _ethynylbenzene():                # C≡C is not the styrene pattern
     return a
 
 CASES["ethynylbenzene_should_reject"] = reject(payload(_ethynylbenzene()))
+
+# ── Wave 2.d: no ring-substituent-count limit (E3) — tie-break battery ──
+def _polysub_benzene(spec_list):     # [(pos, attacher, args...), ...]
+    a = benzene_ring("A")
+    for pos, attacher, *args in spec_list:
+        attacher(a, pos, *args)
+    return a
+
+CASES["4_chloro_12_dimethylbenzene"] = exact(
+    payload(_polysub_benzene([(0, attach_chain, 1), (1, attach_chain, 1), (3, attach_atom, "Cl")])),
+    "4-chloro-1,2-dimethylbenzene")               # lowest locant SET beats alphabetical
+CASES["1_bromo_3_chloro_5_methylbenzene"] = exact(
+    payload(_polysub_benzene([(0, attach_atom, "Br"), (2, attach_atom, "Cl"), (4, attach_chain, 1)])),
+    "1-bromo-3-chloro-5-methylbenzene")           # set tie → first-alphabetical gets lowest
+CASES["1245_tetramethylbenzene"] = exact(
+    payload(_polysub_benzene([(0, attach_chain, 1), (1, attach_chain, 1),
+                              (3, attach_chain, 1), (4, attach_chain, 1)])),
+    "1,2,4,5-tetramethylbenzene")
+
+def _246_tribromophenol():                        # end-state flagship (E1+E3)
+    a = benzene_ring("A")
+    attach_atom(a, 0, "O")
+    for p in (1, 3, 5):
+        attach_atom(a, p, "Br")
+    return a
+
+CASES["246_tribromophenol"] = exact(payload(_246_tribromophenol()), "2,4,6-tribromophenol")
+
+def _24_dibromophenol():                          # anchored direction choice at n=3
+    a = benzene_ring("A")
+    attach_atom(a, 0, "O")
+    attach_atom(a, 1, "Br")
+    attach_atom(a, 3, "Br")
+    return a
+
+CASES["24_dibromophenol"] = exact(payload(_24_dibromophenol()), "2,4-dibromophenol")
+
+def _124_trimethylcyclohexane():                  # cycloalkane n≥3 regression (never limited)
+    a = carbon_ring(6)
+    for p in (0, 1, 3):
+        attach_chain(a, p, 1)
+    return a
+
+CASES["124_trimethylcyclohexane"] = exact(payload(_124_trimethylcyclohexane()), "1,2,4-trimethylcyclohexane")
 
 # ── Phase 3: bridging heteroatoms (ethers, esters, secondary amines) ──
 def _bridged(len_a, len_b, bridge_element):
