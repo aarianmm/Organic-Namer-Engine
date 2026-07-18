@@ -657,6 +657,20 @@ namespace OrganicNamer.Core
         // the degree guard for nitro.
         private string NameHeteroatomSubstituent(int attachIndex, HashSet<int> blocked)
         {
+            // Wave 3 (G2/E4): polyatomic groups (nitro), checked BEFORE the degree
+            // guard - a nitro N legitimately extends beyond attachIndex (its two O
+            // members). Wave 4's alkoxy branch for O attachment atoms goes after this.
+            FunctionalGroup? poly = groups.FirstOrDefault(
+                g => g is PolyatomicGroup && g.Involves(attachIndex));
+            if (poly != null)
+            {
+                if (spec.prefixOnly.ContainsKey(poly.GroupFormula))
+                    return FormatName(spec.prefixOnly[poly.GroupFormula]);
+                if (spec.prefixOrSuffix.ContainsKey(poly.GroupFormula))
+                    return FormatName(spec.prefixOrSuffix[poly.GroupFormula].prefix);
+                throw new Exception($"No prefix name available for substituent '{poly.GroupFormula}'");
+            }
+
             if (atoms.AdjacentAtoms(attachIndex).Any(n => !blocked.Contains(n)))
                 throw new Exception("Substituents extending beyond a single heteroatom are not supported");
 
