@@ -16,7 +16,8 @@ from builders import (
     new_atoms, add_atom, bond, carbon_ring, benzene_ring,
     attach_chain, attach_atom, attach_branch, attach_hydroxymethyl,
     attach_chloromethyl, attach_carboxyl, attach_acyl, attach_nitrile,
-    attach_vinyl, attach_nitro, ring_with_chain_listed_first, payload,
+    attach_vinyl, attach_nitro, attach_bridged_arm, ester_bridge,
+    ring_with_chain_listed_first, payload,
 )
 
 
@@ -499,9 +500,10 @@ def _anisole():
     bond(a, o, c)
     return a
 
-# ring + bridge: bridging exit would misname as methoxyhexane, cyclic exit as
-# hydroxybenzene - the constructor guard must reject the combination instead
-CASES["anisole_should_reject"] = reject(payload(_anisole()))
+# Wave 4 (E6 stage a) flagship: the O-bridge-on-ring shape routes to the cyclic
+# path and names as a substituted benzene, not the misnamed "methoxyhexane"
+# (bridged exit) or "hydroxybenzene" (cyclic exit dropping the methyl) traps.
+CASES["methoxybenzene"] = exact(payload(_anisole()), "methoxybenzene")
 
 def _heteroatom_ring(carbon_count, hetero_element):
     """Ring closed THROUGH the heteroatom (THF, ethylene oxide, pyrrolidine).
@@ -641,7 +643,7 @@ def _diacetimide():                    # imide: N with two acyl carbons
 
 CASES["diacetimide_should_reject"] = reject(payload(_diacetimide()))
 
-def _n_phenylethanamide():             # aromatic amide -> E6, not Wave 1
+def _n_phenylethanamide():
     a = benzene_ring("A")
     n = add_atom(a, "N")
     bond(a, 0, n)
@@ -651,7 +653,10 @@ def _n_phenylethanamide():             # aromatic amide -> E6, not Wave 1
     attach_atom(a, c, "O", order=2)
     return a
 
-CASES["n_phenylethanamide_should_reject"] = reject(payload(_n_phenylethanamide()))
+# Wave 4 (E6 stage e) flagship — arrives early, as Phase C fallout: IsAcidSide
+# (Phase A) + AlkylSideName's AromaticRing case (Phase C) already compose
+# through NameSecondaryAmide with zero additional code (R7/§11).
+CASES["n_phenylethanamide"] = exact(payload(_n_phenylethanamide()), "N-phenylethanamide")
 
 def _trimethylamine():
     a = new_atoms()
@@ -949,6 +954,568 @@ def _methyl_nitroethanoate():          # nitro on a bridged (ester) side
     return a
 
 CASES["methyl_nitroethanoate_should_reject"] = reject(payload(_methyl_nitroethanoate()))
+
+# ── Wave 4 / E6 stage (a): aromatic and ring ethers (alkoxy substituents) ──
+def _ethoxybenzene():
+    a = benzene_ring("A")
+    attach_bridged_arm(a, 0, "O", 2)
+    return a
+
+CASES["ethoxybenzene"] = exact(payload(_ethoxybenzene()), "ethoxybenzene")
+
+def _methoxycyclohexane():
+    a = carbon_ring(6)
+    attach_bridged_arm(a, 0, "O", 1)
+    return a
+
+CASES["methoxycyclohexane"] = exact(payload(_methoxycyclohexane()), "methoxycyclohexane")
+
+def _1_methoxy_2_methylcyclohexane():
+    a = carbon_ring(6)
+    attach_bridged_arm(a, 0, "O", 1)
+    attach_chain(a, 1, 1)
+    return a
+
+CASES["1_methoxy_2_methylcyclohexane"] = exact(
+    payload(_1_methoxy_2_methylcyclohexane()), "1-methoxy-2-methylcyclohexane")  # alphabetical: methoxy < methyl
+
+def _2_methoxyphenol():
+    a = benzene_ring("A")
+    attach_atom(a, 0, "O")             # phenol OH — the retained-parent anchor
+    attach_bridged_arm(a, 1, "O", 1)
+    return a
+
+CASES["2_methoxyphenol"] = exact(payload(_2_methoxyphenol()), "2-methoxyphenol")
+
+def _4_methoxybenzaldehyde():
+    a = benzene_ring("A")
+    attach_acyl(a, 0)                  # -CHO — the retained carbon-parent anchor
+    attach_bridged_arm(a, 3, "O", 1)
+    return a
+
+CASES["4_methoxybenzaldehyde"] = exact(payload(_4_methoxybenzaldehyde()), "4-methoxybenzaldehyde")
+
+def _1_methoxy_4_nitrobenzene():
+    a = benzene_ring("A")
+    attach_bridged_arm(a, 0, "O", 1)
+    attach_nitro(a, 3)
+    return a
+
+CASES["1_methoxy_4_nitrobenzene"] = exact(payload(_1_methoxy_4_nitrobenzene()), "1-methoxy-4-nitrobenzene")
+
+# ── Wave 4 / E6 stage (a) negatives: ether shapes that must stay rejected ──
+def _diphenyl_ether():
+    a = benzene_ring("A")
+    o = add_atom(a, "O")
+    bond(a, 0, o)
+    ring2_offset = len(a)
+    ring2 = benzene_ring("A")
+    for atom in ring2:
+        atom["bonds"] = [{"to": b["to"] + ring2_offset, "order": b["order"]} for b in atom["bonds"]]
+    a.extend(ring2)
+    bond(a, o, ring2_offset)
+    return a
+
+CASES["diphenyl_ether_should_reject"] = reject(payload(_diphenyl_ether()))
+
+def _benzyl_methyl_ether():             # Ph-CH2-O-CH3 — O not on a ring carbon
+    a = benzene_ring("A")
+    ch2 = attach_chain(a, 0, 1)[0]
+    attach_bridged_arm(a, ch2, "O", 1)
+    return a
+
+CASES["benzyl_methyl_ether_should_reject"] = reject(payload(_benzyl_methyl_ether()))
+
+def _dihydrobenzofuran():
+    # 2,3-dihydrobenzofuran: benzene C1-C6; O bonded to C1 and CH2a; CH2a-CH2b;
+    # CH2b bonded to C2. The R5 fused-guard pin (§8): without the
+    # adjacent-to-blocked check, this arm looks like a clean unbranched
+    # saturated "ethoxy" and would silently amputate the fusion.
+    a = benzene_ring("A")
+    o = add_atom(a, "O")
+    bond(a, 0, o)
+    ch2a = add_atom(a, "C")
+    bond(a, o, ch2a)
+    ch2b = add_atom(a, "C")
+    bond(a, ch2a, ch2b)
+    bond(a, ch2b, 1)                    # closes the fused ring back onto C2
+    return a
+
+CASES["dihydrobenzofuran_should_reject"] = reject(payload(_dihydrobenzofuran()))
+
+def _phenyl_vinyl_ether():              # unsaturated arm
+    a = benzene_ring("A")
+    o = add_atom(a, "O")
+    bond(a, 0, o)
+    c1 = add_atom(a, "C")
+    bond(a, o, c1)
+    c2 = add_atom(a, "C")
+    bond(a, c1, c2, 2)
+    return a
+
+CASES["phenyl_vinyl_ether_should_reject"] = reject(payload(_phenyl_vinyl_ether()))
+
+def _isopropoxybenzene():               # branched arm
+    a = benzene_ring("A")
+    o = add_atom(a, "O")
+    bond(a, 0, o)
+    attach_branch(a, o, "isopropyl")
+    return a
+
+CASES["isopropoxybenzene_should_reject"] = reject(payload(_isopropoxybenzene()))
+
+def _2_chloroethoxybenzene():           # heteroatom in the arm
+    a = benzene_ring("A")
+    _, arm = attach_bridged_arm(a, 0, "O", 2)
+    attach_atom(a, arm[-1], "Cl")
+    return a
+
+CASES["2_chloroethoxybenzene_should_reject"] = reject(payload(_2_chloroethoxybenzene()))
+
+def _12_dimethoxybenzene():             # multi-bridge (R12) — message changes, status doesn't
+    a = benzene_ring("A")
+    attach_bridged_arm(a, 0, "O", 1)
+    attach_bridged_arm(a, 1, "O", 1)
+    return a
+
+CASES["12_dimethoxybenzene_should_reject"] = reject(payload(_12_dimethoxybenzene()))
+
+# ── Wave 4 / E6 stages (b)+(c): esters with ring sides, unsubstituted ──
+def _methyl_benzoate():
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    return a
+
+CASES["methyl_benzoate"] = exact(payload(_methyl_benzoate()), "methyl benzoate")
+
+def _ethyl_benzoate():
+    a = benzene_ring("A")
+    ethyl_c = add_atom(a, "C")
+    attach_chain(a, ethyl_c, 1)
+    ester_bridge(a, 0, ethyl_c)
+    return a
+
+CASES["ethyl_benzoate"] = exact(payload(_ethyl_benzoate()), "ethyl benzoate")
+
+def _phenyl_ethanoate():
+    a = benzene_ring("A")
+    acyl_c, bridge_o = ester_bridge(a, None, 0)
+    attach_chain(a, acyl_c, 1)          # ethanoyl: acyl_c + 1 tail carbon
+    return a
+
+CASES["phenyl_ethanoate"] = exact(payload(_phenyl_ethanoate()), "phenyl ethanoate")
+
+def _phenyl_propanoate():
+    a = benzene_ring("A")
+    acyl_c, bridge_o = ester_bridge(a, None, 0)
+    attach_chain(a, acyl_c, 2)          # propanoyl: acyl_c + 2 tail carbons
+    return a
+
+CASES["phenyl_propanoate"] = exact(payload(_phenyl_propanoate()), "phenyl propanoate")
+
+def _phenyl_methanoate():
+    a = benzene_ring("A")
+    ester_bridge(a, None, 0)            # bare acyl C -> methanoate (R7)
+    return a
+
+CASES["phenyl_methanoate"] = exact(payload(_phenyl_methanoate()), "phenyl methanoate")
+
+def _phenyl_benzoate():                 # both sides aromatic (R7)
+    a = benzene_ring("A")               # acid-side ring
+    ring2_offset = len(a)
+    ring2 = benzene_ring("A")           # alkyl-side ring
+    for atom in ring2:
+        atom["bonds"] = [{"to": b["to"] + ring2_offset, "order": b["order"]} for b in atom["bonds"]]
+    a.extend(ring2)
+    ester_bridge(a, 0, ring2_offset)
+    return a
+
+CASES["phenyl_benzoate"] = exact(payload(_phenyl_benzoate()), "phenyl benzoate")
+
+# ── Wave 4 / E6 stages (b)+(c) negatives ──
+def _benzoic_anhydride():               # E6xE7: aromatic acid sides stay unsupported
+    a = benzene_ring("A")
+    c1 = add_atom(a, "C")
+    bond(a, 0, c1)
+    attach_atom(a, c1, "O", order=2)
+    bridge_o = add_atom(a, "O")
+    bond(a, c1, bridge_o)
+    c2 = add_atom(a, "C")
+    bond(a, bridge_o, c2)
+    attach_atom(a, c2, "O", order=2)
+    ring2_offset = len(a)
+    ring2 = benzene_ring("A")
+    for atom in ring2:
+        atom["bonds"] = [{"to": b["to"] + ring2_offset, "order": b["order"]} for b in atom["bonds"]]
+    a.extend(ring2)
+    bond(a, c2, ring2_offset)
+    return a
+
+CASES["benzoic_anhydride_should_reject"] = reject(payload(_benzoic_anhydride()))
+
+def _benzyl_ethanoate():                # ring deeper in the alkyl side
+    a = benzene_ring("A")
+    ch2 = attach_chain(a, 0, 1)[0]
+    acyl_c, bridge_o = ester_bridge(a, None, ch2)
+    attach_chain(a, acyl_c, 1)
+    return a
+
+CASES["benzyl_ethanoate_should_reject"] = reject(payload(_benzyl_ethanoate()))
+
+def _cyclohexyl_ethanoate():            # non-aromatic ring alkyl side
+    a = carbon_ring(6)
+    acyl_c, bridge_o = ester_bridge(a, None, 0)
+    attach_chain(a, acyl_c, 1)
+    return a
+
+CASES["cyclohexyl_ethanoate_should_reject"] = reject(payload(_cyclohexyl_ethanoate()))
+
+def _4_nitrophenyl_ethanoate():         # substituted alkyl-side ring (R4 gate)
+    a = benzene_ring("A")
+    acyl_c, bridge_o = ester_bridge(a, None, 0)
+    attach_chain(a, acyl_c, 1)
+    attach_nitro(a, 3)
+    return a
+
+CASES["4_nitrophenyl_ethanoate_should_reject"] = reject(payload(_4_nitrophenyl_ethanoate()))
+
+def _aspirin():                         # 2-(ethanoyloxy)benzoic acid — recorded non-goal (§19)
+    a = benzene_ring("A")
+    attach_carboxyl(a, 0)
+    acyl_c, bridge_o = ester_bridge(a, None, 1)
+    attach_chain(a, acyl_c, 1)
+    return a
+
+CASES["aspirin_should_reject"] = reject(payload(_aspirin()))
+
+# ── Wave 4 / E6 stage (d): aromatic secondary amines ──
+def _n_methylphenylamine():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    methyl = add_atom(a, "C")
+    bond(a, n, methyl)
+    return a
+
+# The master plan's trap test: assert exactly "N-methylphenylamine", never the
+# misnamed "phenylamine" (which would silently drop the N-methyl).
+CASES["n_methylphenylamine"] = exact(payload(_n_methylphenylamine()), "N-methylphenylamine")
+
+def _n_ethylphenylamine():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    ethyl_c = add_atom(a, "C")
+    bond(a, n, ethyl_c)
+    attach_chain(a, ethyl_c, 1)
+    return a
+
+CASES["n_ethylphenylamine"] = exact(payload(_n_ethylphenylamine()), "N-ethylphenylamine")
+
+def _n_butylphenylamine():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    butyl_c = add_atom(a, "C")
+    bond(a, n, butyl_c)
+    attach_chain(a, butyl_c, 3)
+    return a
+
+# Forced-base rule (R6/§10): the ring wins as the base even though the butyl
+# side has more carbons than the ring — never Min/Max length selection.
+CASES["n_butylphenylamine"] = exact(payload(_n_butylphenylamine()), "N-butylphenylamine")
+
+# ── Wave 4 / E6 stage (d) negatives ──
+def _diphenylamine():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    ring2_offset = len(a)
+    ring2 = benzene_ring("A")
+    for atom in ring2:
+        atom["bonds"] = [{"to": b["to"] + ring2_offset, "order": b["order"]} for b in atom["bonds"]]
+    a.extend(ring2)
+    bond(a, n, ring2_offset)
+    return a
+
+CASES["diphenylamine_should_reject"] = reject(payload(_diphenylamine()))
+
+def _4_methyl_n_methylphenylamine():    # substituted ring — R4's side.Count==6 gate
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    methyl_n = add_atom(a, "C")
+    bond(a, n, methyl_n)
+    attach_chain(a, 3, 1)                # ring methyl substituent, para position
+    return a
+
+CASES["4_methyl_n_methylphenylamine_should_reject"] = reject(payload(_4_methyl_n_methylphenylamine()))
+
+# ── Wave 4 / E6 stage (e): aromatic amides (zero structural code — Phases A+C
+# already deliver this via IsAcidSide + AlkylSideName/AcidSideName's aromatic
+# kinds; this is the test wave that pins the latent capability, R7/§11) ──
+def _n_phenylpropanamide():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    c = add_atom(a, "C")
+    bond(a, n, c)
+    attach_chain(a, c, 2)               # propanoyl: c + 2 tail carbons
+    attach_atom(a, c, "O", order=2)
+    return a
+
+CASES["n_phenylpropanamide"] = exact(payload(_n_phenylpropanamide()), "N-phenylpropanamide")
+
+def _n_methylbenzamide():
+    a = benzene_ring("A")
+    c = add_atom(a, "C")
+    bond(a, 0, c)
+    attach_atom(a, c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, c, n)
+    bond(a, n, add_atom(a, "C"))        # N-methyl
+    return a
+
+CASES["n_methylbenzamide"] = exact(payload(_n_methylbenzamide()), "N-methylbenzamide")
+
+def _n_phenylbenzamide():               # both sides aromatic (R7)
+    a = benzene_ring("A")               # acid-side ring
+    c = add_atom(a, "C")
+    bond(a, 0, c)
+    attach_atom(a, c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, c, n)
+    ring2_offset = len(a)
+    ring2 = benzene_ring("A")           # N-side ring
+    for atom in ring2:
+        atom["bonds"] = [{"to": b["to"] + ring2_offset, "order": b["order"]} for b in atom["bonds"]]
+    a.extend(ring2)
+    bond(a, n, ring2_offset)
+    return a
+
+CASES["n_phenylbenzamide"] = exact(payload(_n_phenylbenzamide()), "N-phenylbenzamide")
+
+def _n_methyl_n_phenylethanamide():     # tertiary, one ring N-side (R7)
+    a = new_atoms()
+    acid_c = add_atom(a, "C")
+    attach_chain(a, acid_c, 1)          # ethanoyl: acid_c + 1 tail carbon
+    attach_atom(a, acid_c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, acid_c, n)
+    bond(a, n, add_atom(a, "C"))        # N-methyl
+    ring_offset = len(a)
+    ring = benzene_ring("A")
+    for atom in ring:
+        atom["bonds"] = [{"to": b["to"] + ring_offset, "order": b["order"]} for b in atom["bonds"]]
+    a.extend(ring)
+    bond(a, n, ring_offset)             # N-phenyl
+    return a
+
+# alphabetical N-order holds: methyl < phenyl
+CASES["n_methyl_n_phenylethanamide"] = exact(
+    payload(_n_methyl_n_phenylethanamide()), "N-methyl-N-phenylethanamide")
+
+def _nn_diphenylethanamide():           # tertiary, two ring N-sides (R7)
+    a = new_atoms()
+    acid_c = add_atom(a, "C")
+    attach_chain(a, acid_c, 1)
+    attach_atom(a, acid_c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, acid_c, n)
+    for _ in range(2):
+        ring_offset = len(a)
+        ring = benzene_ring("A")
+        for atom in ring:
+            atom["bonds"] = [{"to": b["to"] + ring_offset, "order": b["order"]} for b in atom["bonds"]]
+        a.extend(ring)
+        bond(a, n, ring_offset)
+    return a
+
+CASES["nn_diphenylethanamide"] = exact(payload(_nn_diphenylethanamide()), "N,N-diphenylethanamide")
+
+def _nn_dimethylbenzamide():            # tertiary, ring acid side (R7)
+    a = benzene_ring("A")
+    acid_c = add_atom(a, "C")
+    bond(a, 0, acid_c)
+    attach_atom(a, acid_c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, acid_c, n)
+    bond(a, n, add_atom(a, "C"))        # N-methyl
+    bond(a, n, add_atom(a, "C"))        # N-methyl
+    return a
+
+CASES["nn_dimethylbenzamide"] = exact(payload(_nn_dimethylbenzamide()), "N,N-dimethylbenzamide")
+
+# ── Wave 4 / E6 stage (e) negatives ──
+def _paracetamol_shape():               # ring-substituted N-side
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    c = add_atom(a, "C")
+    bond(a, n, c)
+    attach_chain(a, c, 1)
+    attach_atom(a, c, "O", order=2)
+    attach_atom(a, 3, "O")              # ring OH, para to the N attachment
+    return a
+
+CASES["paracetamol_shape_should_reject"] = reject(payload(_paracetamol_shape()))
+
+def _n_phenyl_imide():                  # 2 acid carbons on N — existing throw
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    for _ in range(2):
+        c = add_atom(a, "C")
+        bond(a, n, c)
+        attach_chain(a, c, 1)
+        attach_atom(a, c, "O", order=2)
+    return a
+
+CASES["n_phenyl_imide_should_reject"] = reject(payload(_n_phenyl_imide()))
+
+def _n_methyl_3_nitrobenzamide():
+    # Substituted benzamide acid ring: rejects already in Phase E via
+    # TryMatchBenzoylSide's side.Count==8 gate. R8's explicit ester-only
+    # throw lands in Phase F (different reason, same reject status) - keep
+    # this test from Phase E onward regardless (§11).
+    a = benzene_ring("A")
+    c = add_atom(a, "C")
+    bond(a, 0, c)
+    attach_atom(a, c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, c, n)
+    bond(a, n, add_atom(a, "C"))        # N-methyl
+    attach_nitro(a, 2)                  # ring nitro substituent
+    return a
+
+CASES["n_methyl_3_nitrobenzamide_should_reject"] = reject(payload(_n_methyl_3_nitrobenzamide()))
+
+# ── Wave 4 / E6: substituted benzoate ring sides (Phase F, esters only) ──
+def _methyl_3_nitrobenzoate():          # end-state flagship: E1+E2+E3+E4+E6
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_nitro(a, 2)
+    return a
+
+CASES["methyl_3_nitrobenzoate"] = exact(payload(_methyl_3_nitrobenzoate()), "methyl 3-nitrobenzoate")
+
+def _methyl_2_hydroxybenzoate():
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_atom(a, 1, "O")
+    return a
+
+CASES["methyl_2_hydroxybenzoate"] = exact(payload(_methyl_2_hydroxybenzoate()), "methyl 2-hydroxybenzoate")
+
+def _methyl_4_aminobenzoate():
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_atom(a, 3, "N")
+    return a
+
+CASES["methyl_4_aminobenzoate"] = exact(payload(_methyl_4_aminobenzoate()), "methyl 4-aminobenzoate")
+
+def _methyl_35_dinitrobenzoate():       # anchored numbering, n >= 3
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_nitro(a, 2)
+    attach_nitro(a, 4)
+    return a
+
+CASES["methyl_35_dinitrobenzoate"] = exact(payload(_methyl_35_dinitrobenzoate()), "methyl 3,5-dinitrobenzoate")
+
+def _methyl_2_chlorobenzoate():
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_atom(a, 1, "Cl")
+    return a
+
+CASES["methyl_2_chlorobenzoate"] = exact(payload(_methyl_2_chlorobenzoate()), "methyl 2-chlorobenzoate")
+
+def _ethyl_4_methylbenzoate():
+    a = benzene_ring("A")
+    ethyl_c = add_atom(a, "C")
+    attach_chain(a, ethyl_c, 1)
+    ester_bridge(a, 0, ethyl_c)
+    attach_chain(a, 3, 1)
+    return a
+
+CASES["ethyl_4_methylbenzoate"] = exact(payload(_ethyl_4_methylbenzoate()), "ethyl 4-methylbenzoate")
+
+# ── Phase F negatives ──
+def _methyl_4_formylbenzoate():         # -CHO substituent: Q4 tip-group throw
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_acyl(a, 3)
+    return a
+
+CASES["methyl_4_formylbenzoate_should_reject"] = reject(payload(_methyl_4_formylbenzoate()))
+
+def _methyl_4_carboxybenzoate():        # -COOH substituent: unmerged, multi-group throw
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_carboxyl(a, 3)
+    return a
+
+CASES["methyl_4_carboxybenzoate_should_reject"] = reject(payload(_methyl_4_carboxybenzoate()))
+
+# ── Wave 4: tertiary aromatic amines (aliphatic tertiary amines stay rejected) ──
+def _nn_dimethylphenylamine():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    bond(a, n, add_atom(a, "C"))         # N-methyl
+    bond(a, n, add_atom(a, "C"))         # N-methyl
+    return a
+
+CASES["nn_dimethylphenylamine"] = exact(payload(_nn_dimethylphenylamine()), "N,N-dimethylphenylamine")
+
+def _n_ethyl_n_methylphenylamine():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    bond(a, n, add_atom(a, "C"))         # N-methyl
+    et = add_atom(a, "C")
+    bond(a, n, et)
+    attach_chain(a, et, 1)               # N-ethyl
+    return a
+
+CASES["n_ethyl_n_methylphenylamine"] = exact(
+    payload(_n_ethyl_n_methylphenylamine()), "N-ethyl-N-methylphenylamine")
+
+def _triphenylamine():
+    a = new_atoms()
+    n = add_atom(a, "N")
+    for _ in range(3):
+        ring_offset = len(a)
+        ring = benzene_ring("A")
+        for atom in ring:
+            atom["bonds"] = [{"to": b["to"] + ring_offset, "order": b["order"]} for b in atom["bonds"]]
+        a.extend(ring)
+        bond(a, n, ring_offset)
+    return a
+
+CASES["triphenylamine_should_reject"] = reject(payload(_triphenylamine()))
+
+def _nn_dimethyl_4_methylphenylamine():  # substituted ring
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    bond(a, n, add_atom(a, "C"))
+    bond(a, n, add_atom(a, "C"))
+    attach_chain(a, 3, 1)                 # ring methyl substituent, para
+    return a
+
+CASES["nn_dimethyl_4_methylphenylamine_should_reject"] = reject(
+    payload(_nn_dimethyl_4_methylphenylamine()))
 
 # ── Adversarial / malformed input: must not crash the server ──
 CASES["empty_atoms_list"] = no_crash({"atoms": [], "specificationSet": "AllGroups"})

@@ -30,22 +30,31 @@ namespace OrganicNamer.Core
             this.atoms = atoms;
             groups = atoms.Groups;
 
-            // ──── Guards (Phase 3) ────
+            // ──── Guards (Phase 3, routing rewritten Wave 4 / R1) ────
             // MUST be before MergeFunctionalGroups — the merge step would
             // incorrectly combine C=O + C-O into COOH on the ester carbon.
             List<int> bridgingAtoms = atoms.GetBridgingAtoms();
             bool cyclic = atoms.IsCyclic();
 
-            // A molecule satisfying both early-exit conditions (anisole,
-            // methoxycyclohexane) would be confidently misnamed by whichever
-            // exit ran first — neither path can name it, so reject up front.
-            if (bridgingAtoms.Count > 0 && cyclic)
-                throw new Exception("Molecules with both a ring and a bridging heteroatom are not supported");
+            // Multi-bridge is rejected outright regardless of ring shape (R12 — this
+            // guard now runs first because the ring+bridge throw below it is gone).
             if (bridgingAtoms.Count > 1)
                 throw new Exception("Multiple bridging heteroatoms are not supported");
 
-            // Early exit: bridging molecules (esters, ethers, amines)
-            if (bridgingAtoms.Count == 1)
+            // Wave 4 (R1): the only ring+bridge shape that changes lanes is the
+            // aromatic ether — an O bridge attached to a ring with no adjacent acid
+            // carbon (an ester/anhydride's C=O would route it to the bridged path
+            // instead). Every other ring+bridge shape (esters, amides, amines, with
+            // or without ring sides) is correctly a bridged-path molecule whose
+            // *sides* need ring awareness — that lives in ClassifySide (R3/R4).
+            bool etherOnRing = bridgingAtoms.Count == 1
+                && cyclic
+                && atoms.Atoms[bridgingAtoms[0]].Symbol == "O"
+                && FindAcidCarbons(bridgingAtoms[0]).Count == 0;
+
+            // Early exit: bridging molecules (esters, ethers, amines) — skipped for
+            // etherOnRing, which falls through to the cyclic path below instead.
+            if (bridgingAtoms.Count == 1 && !etherOnRing)
             {
                 names = NameBridgedMolecule(bridgingAtoms[0]);
                 names = names.Distinct().ToArray();
@@ -412,15 +421,25 @@ namespace OrganicNamer.Core
 
         // ── Phase 3 / Wave 1: Bridged-molecule naming ──────────────────────────────
         // (esters, ethers, secondary amines, anhydrides, secondary/tertiary amides)
-        private enum SideKind { PlainAlkyl, AcidSide }   // E6 adds: AromaticRing
+        private enum SideKind { PlainAlkyl, AcidSide, AromaticRing, AromaticAcidSide }
         private enum AcidClass { Ester, Amide, Anhydride }
+
+        // Both acid-bearing kinds (aliphatic and aromatic) count as "the acid side"
+        // for dispatch purposes — every acid-pick site in this file must go through
+        // this helper rather than `== SideKind.AcidSide` (R3): an `AromaticAcidSide`
+        // that slips past the pick (or into a complement it shouldn't) either fails
+        // to name or gets silently dropped from an N-substituent list.
+        private static bool IsAcidSide(SideKind k) =>
+            k == SideKind.AcidSide || k == SideKind.AromaticAcidSide;
 
         private readonly struct SideInfo
         {
             public SideKind Kind { get; init; }
             public int CarbonCount { get; init; }
-            // E6 will add ring-related fields here (e.g. the ring atom list) without
-            // touching any caller that only reads Kind / CarbonCount.
+            public int AttachIndex { get; init; }        // side[0] — the bridge-attachment atom
+            public List<int>? RingAtoms { get; init; }    // ordered walk; [0] = ring carbon bonded
+                                                           // to the bridge (AromaticRing) or to the
+                                                           // acid carbon (AromaticAcidSide)
         }
 
         private string[] NameBridgedMolecule(int bridgeIndex)
@@ -430,13 +449,15 @@ namespace OrganicNamer.Core
                                           .Where(n => atoms.Atoms[n].Name == "Carbon").ToArray();
             List<int> acidCarbons = FindAcidCarbons(bridgeIndex);
 
-            // Tertiary N-bridge (3 carbon neighbours): amide only. Checked BEFORE
-            // SplitAtBridgingAtom, which rejects ≠2 neighbours.
+            // Tertiary N-bridge (3 carbon neighbours): amide or aromatic amine only.
+            // Checked BEFORE SplitAtBridgingAtom, which rejects ≠2 neighbours.
             if (bridgeSymbol == "N" && carbonNeighbours.Length == 3)
             {
                 if (acidCarbons.Count == 1)
                     return NameTertiaryAmide(bridgeIndex);
-                throw new Exception("Tertiary amines and N-centred imides are not supported");
+                if (acidCarbons.Count == 0)
+                    return NameTertiaryAromaticAmine(bridgeIndex);  // throws unless exactly one ring side
+                throw new Exception("N-centred imides are not supported");
             }
 
             var (sideA, sideB) = atoms.SplitAtBridgingAtom(bridgeIndex); // exactly-2 + ring guard
@@ -484,6 +505,25 @@ namespace OrganicNamer.Core
                           && groups.Any(g => g.GroupFormula == "C=O" && g.Involves(attach));
             int allowedOxygen = isAcid ? FindCarbonylOxygen(attach) : -1;
 
+            // E6 (Wave 4): aromatic ring sides. Detection is eager; naming capability
+            // arrives per-phase in AlkylSideName/AcidSideName (throwing until then —
+            // Phase A ships detection only, so these still fall through to a throw).
+            if (!isAcid)
+            {
+                List<int>? bareRing = TryMatchAromaticRingSide(side);
+                if (bareRing != null)
+                    return new SideInfo { Kind = SideKind.AromaticRing, CarbonCount = 6,
+                                          AttachIndex = attach, RingAtoms = bareRing };
+            }
+            else
+            {
+                List<int>? acylRing = TryMatchBenzoylSide(side, attach);
+                if (acylRing != null)
+                    return new SideInfo { Kind = SideKind.AromaticAcidSide,
+                                          CarbonCount = side.Count(i => atoms.Atoms[i].Name == "Carbon"),
+                                          AttachIndex = attach, RingAtoms = acylRing };
+            }
+
             // Plain-alkyl validation — byte-identical to the old ValidatePlainAlkylSide loop.
             foreach (int idx in side)
             {
@@ -512,31 +552,129 @@ namespace OrganicNamer.Core
             atoms.AdjacentAtoms(acidCarbon)
                  .First(n => atoms.Atoms[n].Name == "Oxygen" && atoms.BondOrder(acidCarbon, n) == 2);
 
+        // ── E6 (Wave 4) — R4: aromatic-ring side detection ────────────────────────
+        // A bare phenyl side: exactly 6 atoms, all carbon, and an ordered aromatic
+        // 6-cycle through side[0] within the side. Because SplitAtBridgingAtom already
+        // guarantees the side is a connected component cut at the bridge, side.Count
+        // == 6 alone guarantees the ring is unsubstituted — any substituent's atoms
+        // would inflate the side, so a substituted ring never matches here and falls
+        // to the plain-alkyl loop, which throws on the ring-attachment carbon's extra
+        // neighbour. Failure mode is always reject, never misname.
+        private List<int>? TryMatchAromaticRingSide(List<int> side)
+        {
+            if (side.Count != 6 || side.Any(i => atoms.Atoms[i].Name != "Carbon"))
+                return null;
+            return TryFindAromaticRing(side[0], new HashSet<int>(side));
+        }
+
+        // A benzoyl side (acid carbon + carbonyl O + ring): the acid carbon's only
+        // in-side carbon neighbour is the ring carbon `rc`, and an ordered aromatic
+        // 6-cycle exists through `rc` within the side. Phase A/C gate the side to
+        // exactly 8 atoms (acid C + carbonyl O + 6 ring C ⇒ unsubstituted ring) —
+        // Phase F lifts this gate to allow ring substituents.
+        private List<int>? TryMatchBenzoylSide(List<int> side, int attach)
+        {
+            HashSet<int> sideSet = new HashSet<int>(side);
+            int[] ringNeighbours = atoms.AdjacentAtoms(attach)
+                .Where(n => sideSet.Contains(n) && atoms.Atoms[n].Name == "Carbon").ToArray();
+            // Phase F (§12): >= 8, not == 8 — every side atom beyond {acid C, carbonyl
+            // O} is necessarily reachable only through the ring (the acid carbon's four
+            // bonds are fully spoken for: bridge O + carbonyl O + rc), so "extra atoms"
+            // ≡ "ring substituents" — no separate completeness check needed.
+            if (ringNeighbours.Length != 1 || side.Count < 8)
+                return null;
+            return TryFindAromaticRing(ringNeighbours[0], sideSet);
+        }
+
+        // Ordered aromatic 6-ring through `start`, using only atoms in `within` (the
+        // side's atom set). Returns the ring with ring[0] == start, or null. Global
+        // FindPathBlocking is safe here because the side's only connection to the
+        // rest of the molecule is the bridge atom — the DFS cannot escape the side
+        // and return. `partial.All(within.Contains)` is defence in depth regardless.
+        private List<int>? TryFindAromaticRing(int start, HashSet<int> within)
+        {
+            int[] cn = atoms.AdjacentAtoms(start)
+                .Where(n => within.Contains(n) && atoms.Atoms[n].Name == "Carbon").ToArray();
+            for (int a = 0; a < cn.Length; a++)
+                for (int b = a + 1; b < cn.Length; b++)
+                {
+                    List<int> partial = atoms.FindPathBlocking(cn[a], cn[b], start);
+                    if (partial.Count == 5 && partial[partial.Count - 1] == cn[b]
+                        && partial.All(within.Contains)
+                        && partial.All(p => atoms.Atoms[p].Name == "Carbon"))
+                    {
+                        var ring = new List<int> { start };
+                        ring.AddRange(partial);
+                        if (atoms.IsAromatic(ring)) return ring;
+                    }
+                }
+            return null;
+        }
+
         // Name a side used as an alkyl substituent / base ("methyl", "ethyl").
         // E6: case SideKind.AromaticRing => "phenyl" (or the substituted-ring name).
         private string AlkylSideName(SideInfo side) => side.Kind switch
         {
             SideKind.PlainAlkyl => FormatName(spec.alkylNames[side.CarbonCount] + "yl"),
+            SideKind.AromaticRing => SpecificationData.AromaticAlkylSideName,   // "phenyl"
             _ => throw new Exception("This side cannot be named as an alkyl substituent")
         };
 
         // Name an acid side for a given functional class ("ethanoate"/"ethanamide"/"ethanoic").
-        // The class owns its suffix; E6 teaches this method the retained aromatic forms
-        // (benzoate / benzamide / benzoic) for an acid side whose R is a ring.
+        // Each kind owns its own suffix/stem selection — Phase F extends the
+        // AromaticAcidSide branch with ring-prefix naming for substituted rings.
         private string AcidSideName(SideInfo side, AcidClass cls)
         {
-            string suffix = cls switch
+            if (side.Kind == SideKind.AcidSide)
             {
-                AcidClass.Ester => "anoate",       // NOT "an|oate": elision would strip the o. §5
-                AcidClass.Amide => "anamide",      // NOT "an|amide"
-                AcidClass.Anhydride => "anoic",    // NOT "an|oic"
-                _ => throw new Exception("Unknown acid class")
-            };
-            return side.Kind switch
+                string suffix = cls switch
+                {
+                    AcidClass.Ester => "anoate",       // NOT "an|oate": elision would strip the o. §5
+                    AcidClass.Amide => "anamide",      // NOT "an|amide"
+                    AcidClass.Anhydride => "anoic",    // NOT "an|oic"
+                    _ => throw new Exception("Unknown acid class")
+                };
+                return FormatName(spec.alkylNames[side.CarbonCount] + suffix);
+            }
+            if (side.Kind == SideKind.AromaticAcidSide)
             {
-                SideKind.AcidSide => FormatName(spec.alkylNames[side.CarbonCount] + suffix),
-                _ => throw new Exception("This side cannot be named as an acid side")
-            };
+                string stem = cls switch
+                {
+                    AcidClass.Ester => SpecificationData.AromaticEsterAcidStem,   // "benzoate"
+                    AcidClass.Amide => SpecificationData.AromaticAmideAcidStem,   // "benzamide"
+                    // E6xE7: benzoic anhydride — no aromatic-anhydride vocabulary.
+                    AcidClass.Anhydride => throw new Exception("Aromatic acid anhydrides are not supported"),
+                    _ => throw new Exception("Unknown acid class")
+                };
+
+                // Phase F (§12): ring substituents on the benzoate/benzamide acid side.
+                // Safe with PRE-MERGE groups (the bridged path never merges — Constraint
+                // 1): a ring -COOH/-CHO/-CONH2/-COCl presents unmerged and rejects via
+                // G1's tip-group/multi-group guards rather than misnaming.
+                List<int> ring = side.RingAtoms!;
+                HashSet<int> ringSet = new HashSet<int>(ring);
+                var ringSubs = atoms.GetRingSubstituents(ring)
+                    .Where(s => s.atomIndex != side.AttachIndex)   // drop the acid carbon itself
+                    .ToList();
+                if (ringSubs.Count == 0)
+                    return stem;
+                if (cls != AcidClass.Ester)
+                    // R8: the N-prefix scaffold can't interleave locant kinds with a
+                    // ring-numeric prefix (would sort as "N-methyl-3-bromobenzamide"
+                    // instead of the correct "3-bromo-N-methylbenzamide") — esters are
+                    // immune because the alkyl word is a separate leading token.
+                    throw new Exception("Substituted aromatic acid sides are only supported for esters");
+
+                var named = ringSubs
+                    .Select(s => (s.ringPosition,
+                                  name: NameSubstituent(ring[s.ringPosition], s.atomIndex, ringSet,
+                                                        allowSuffixCapableTip: false)))
+                    .ToList();
+                (int[] numbering, List<string> subNames) =
+                    FindBestRingNumbering(ring, named, anchorPos: 0);   // acid carbon's ring C = locant 1
+                return FormatName(BuildRingPrefixName(numbering, subNames) + stem);
+            }
+            throw new Exception("This side cannot be named as an acid side");
         }
 
         // Build the "N-…" locant scaffold. Uppercase N survives because each substituent word
@@ -579,15 +717,39 @@ namespace OrganicNamer.Core
             // methoxymethane, methoxyethane, ethoxypropane — spec.middle[""] ("an|e")
             // rather than a hardcoded suffix
 
-        private string[] NameSecondaryAmine(List<int> sideA, List<int> sideB) =>
-            NameSymmetricBridge(sideA, sideB, "yl", "an|amine", "N-");
-            // N-methylethanamine, N-ethylpropanamine
+        // E6 (d): aromatic secondary amines. The ring, when present, is FORCED as the
+        // base — never Min/Max length selection like the all-alkyl case — because the
+        // base name is G4's retained parent string, not a numbered alkyl chain.
+        private string[] NameSecondaryAmine(List<int> sideA, List<int> sideB)
+        {
+            SideInfo a = ClassifySide(sideA);
+            SideInfo b = ClassifySide(sideB);
+            bool aRing = a.Kind == SideKind.AromaticRing;
+            bool bRing = b.Kind == SideKind.AromaticRing;
+
+            if (aRing && bRing)
+                throw new Exception("Diarylamines are not supported");            // diphenylamine
+
+            if (aRing || bRing)
+            {
+                SideInfo alkyl = aRing ? b : a;
+                if (alkyl.Kind != SideKind.PlainAlkyl)
+                    throw new Exception("Amines with this side combination are not supported");
+                string nPrefix = BuildNSubstituentPrefix(
+                    new List<string> { AlkylSideName(alkyl) });                   // "N-methyl"
+                return new[] { nPrefix
+                    + SpecificationData.AromaticHeteroatomParentNames["C-N"] };   // "phenylamine"
+            }
+
+            return NameSymmetricBridge(sideA, sideB, "yl", "an|amine", "N-");
+            // N-methylethanamine, N-ethylpropanamine — unchanged path
+        }
 
         private string[] NameEster(List<int> sideA, List<int> sideB)
         {
             SideInfo a = ClassifySide(sideA);
             SideInfo b = ClassifySide(sideB);
-            var (acid, alkyl) = a.Kind == SideKind.AcidSide ? (a, b) : (b, a); // dispatch ⇒ exactly one AcidSide
+            var (acid, alkyl) = IsAcidSide(a.Kind) ? (a, b) : (b, a); // dispatch ⇒ exactly one acid side
             return new[] { AlkylSideName(alkyl) + " " + AcidSideName(acid, AcidClass.Ester) };
             // "methyl ethanoate", "ethyl propanoate" — methanoate (acidLen == 1) also works
         }
@@ -611,7 +773,7 @@ namespace OrganicNamer.Core
         {
             SideInfo a = ClassifySide(sideA);
             SideInfo b = ClassifySide(sideB);
-            var (acid, alkyl) = a.Kind == SideKind.AcidSide ? (a, b) : (b, a);
+            var (acid, alkyl) = IsAcidSide(a.Kind) ? (a, b) : (b, a);
 
             string nPrefix = BuildNSubstituentPrefix(new List<string> { AlkylSideName(alkyl) }); // "N-methyl"
             return new[] { nPrefix + AcidSideName(acid, AcidClass.Amide) };                       // "N-methylethanamide"
@@ -622,12 +784,31 @@ namespace OrganicNamer.Core
             List<List<int>> sides = atoms.SplitAtBridgingAtomMultiway(bridgeIndex);
             List<SideInfo> infos = sides.Select(ClassifySide).ToList();
 
-            SideInfo acid = infos.First(s => s.Kind == SideKind.AcidSide);          // dispatch ⇒ exactly one
-            var nSubNames = infos.Where(s => s.Kind != SideKind.AcidSide)
+            SideInfo acid = infos.First(s => IsAcidSide(s.Kind));                    // dispatch ⇒ exactly one
+            var nSubNames = infos.Where(s => !IsAcidSide(s.Kind))
                                  .Select(AlkylSideName).ToList();                    // the two N-substituents
 
             string nPrefix = BuildNSubstituentPrefix(nSubNames);                     // "N,N-dimethyl"
             return new[] { nPrefix + AcidSideName(acid, AcidClass.Amide) };          // "N,N-dimethylethanamide"
+        }
+
+        // N,N-dialkyl aromatic amines. Aliphatic tertiary amines (trimethylamine) stay
+        // rejected — deliberate: only the aromatic form is asked for, and the ring
+        // being forced as the base is the same rule NameSecondaryAmine already applies.
+        private string[] NameTertiaryAromaticAmine(int bridgeIndex)
+        {
+            List<List<int>> sides = atoms.SplitAtBridgingAtomMultiway(bridgeIndex);
+            List<SideInfo> infos = sides.Select(ClassifySide).ToList();
+
+            int ringCount = infos.Count(s => s.Kind == SideKind.AromaticRing);
+            if (ringCount != 1 || infos.Any(s => s.Kind != SideKind.AromaticRing
+                                              && s.Kind != SideKind.PlainAlkyl))
+                throw new Exception("Tertiary amines are only supported with exactly one aromatic side");
+
+            var nSubNames = infos.Where(s => s.Kind == SideKind.PlainAlkyl)
+                                 .Select(AlkylSideName).ToList();
+            string nPrefix = BuildNSubstituentPrefix(nSubNames);                     // "N,N-dimethyl"
+            return new[] { nPrefix + SpecificationData.AromaticHeteroatomParentNames["C-N"] };
         }
 
         // ── Wave 2 / G1: unified substituent namer ─────────────────────────────────
@@ -671,6 +852,18 @@ namespace OrganicNamer.Core
                 throw new Exception($"No prefix name available for substituent '{poly.GroupFormula}'");
             }
 
+            // Wave 4 (E6): alkoxy substituents (-O-R on a ring). O only — the N analogue
+            // must keep throwing (an N-alkyl arm belongs to the bridged amine path;
+            // naming it here would drop the N-substituent, the N-analogue of the
+            // anisole trap).
+            if (atoms.Atoms[attachIndex].Symbol == "O")
+            {
+                int[] outside = atoms.AdjacentAtoms(attachIndex)
+                    .Where(n => !blocked.Contains(n)).ToArray();
+                if (outside.Length == 1 && atoms.Atoms[outside[0]].Name == "Carbon")
+                    return NameAlkoxyArm(attachIndex, outside[0], blocked);
+            }
+
             if (atoms.AdjacentAtoms(attachIndex).Any(n => !blocked.Contains(n)))
                 throw new Exception("Substituents extending beyond a single heteroatom are not supported");
 
@@ -682,6 +875,32 @@ namespace OrganicNamer.Core
             // Replaces GetSubstituentName's symbol.ToLower() fallback, which silently
             // emitted "cl" under specs with no halo entries (Q1). Reject instead.
             throw new Exception($"No prefix name available for substituent '{formula}'");
+        }
+
+        // Straight, saturated, pure-carbon arm only ("methoxy", "ethoxy", ...). Mirrors
+        // ClassifySide's plain-alkyl loop. The adjacent-to-blocked check is load-bearing,
+        // not hygiene: without it, a fused-ring arm (e.g. 2,3-dihydrobenzofuran's
+        // -O-CH2-CH2- closing back onto the ring) would present as a clean, unbranched,
+        // saturated all-carbon arm and silently amputate the fusion.
+        private string NameAlkoxyArm(int etherOxygen, int firstCarbon, HashSet<int> blocked)
+        {
+            var armBlocked = new HashSet<int>(blocked) { etherOxygen };
+            List<int> arm = atoms.CollectReachable(firstCarbon, armBlocked);
+            foreach (int idx in arm)
+            {
+                if (atoms.Atoms[idx].Name != "Carbon")
+                    throw new Exception("Alkoxy substituents carrying further heteroatoms are not supported");
+                if (atoms.AdjacentAtoms(idx).Any(n => blocked.Contains(n)))
+                    throw new Exception("Fused or bridged ring systems are not supported");
+                if (groups.Any(g => g is CarbonCarbonGroup && g.Involves(idx)))
+                    throw new Exception("Unsaturated alkoxy substituents are not supported");
+                int limit = (idx == firstCarbon) ? 1 : 2;
+                if (atoms.AlkylCounter(idx) > limit)
+                    throw new Exception("Branched alkoxy substituents are not supported");
+            }
+            if (arm.Count >= spec.alkylNames.Length)
+                throw new Exception("Alkoxy substituent is too long to name");
+            return FormatName(spec.alkylNames[arm.Count] + "oxy");   // meth|a + oxy -> "methoxy"
         }
 
         // Carbon substituent grammar (Wave 2, per ruling D4):
@@ -931,10 +1150,23 @@ namespace OrganicNamer.Core
         // ── Phase 1: Cyclic naming ─────────────────────────────────────────────────
         private string[] NameCyclicMolecule()
         {
-            // Wave 2 (D2): merging here is safe — dispatch has already run, so no
-            // bridging heteroatom (and hence no ester/amide carbon the merge could
-            // corrupt) can be present — and necessary, so ring substituents like -COOH
-            // appear as one merged group for the parent table and G1's tip lookup.
+            // Wave 2 (D2), re-proved Wave 4 (R2): merging here is safe. It matters now
+            // because the aromatic-ether route (R1) can reach this method with a
+            // bridging heteroatom present — the old argument ("no bridging heteroatom
+            // can be present") is false as stated.
+            //
+            // The merge only corrupts when one carbon carries both C-O and C=O that are
+            // NOT a genuine COOH/COCl/CONH pattern. The ether route's own precondition
+            // (FindAcidCarbons(bridgeO).Count == 0) guarantees neither carbon adjacent
+            // to the bridge O carries a C=O, so the bridge's C-O groups never combine
+            // with anything. Any other carbon carrying C-O + C=O got both from
+            // non-bridge sources — a genuine ring substituent (e.g. a -COOH on
+            // 2-methoxybenzoic acid) that the merge exists to combine. Ester carbons —
+            // the actual corruption case — can never reach this method: an ester
+            // bridge has an adjacent acid carbon, so it fails the ether route's
+            // precondition and stays on the bridged path, which never merges. Merging
+            // here is necessary too, so ring substituents like -COOH appear as one
+            // merged group for the parent table and G1's tip lookup.
             atoms.MergeFunctionalGroups(spec.merging);
 
             List<int> ring = atoms.FindRing();
