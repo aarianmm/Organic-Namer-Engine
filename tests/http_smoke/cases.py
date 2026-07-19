@@ -1252,6 +1252,145 @@ def _4_methyl_n_methylphenylamine():    # substituted ring — R4's side.Count==
 
 CASES["4_methyl_n_methylphenylamine_should_reject"] = reject(payload(_4_methyl_n_methylphenylamine()))
 
+# ── Wave 4 / E6 stage (e): aromatic amides (zero structural code — Phases A+C
+# already deliver this via IsAcidSide + AlkylSideName/AcidSideName's aromatic
+# kinds; this is the test wave that pins the latent capability, R7/§11) ──
+def _n_phenylpropanamide():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    c = add_atom(a, "C")
+    bond(a, n, c)
+    attach_chain(a, c, 2)               # propanoyl: c + 2 tail carbons
+    attach_atom(a, c, "O", order=2)
+    return a
+
+CASES["n_phenylpropanamide"] = exact(payload(_n_phenylpropanamide()), "N-phenylpropanamide")
+
+def _n_methylbenzamide():
+    a = benzene_ring("A")
+    c = add_atom(a, "C")
+    bond(a, 0, c)
+    attach_atom(a, c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, c, n)
+    bond(a, n, add_atom(a, "C"))        # N-methyl
+    return a
+
+CASES["n_methylbenzamide"] = exact(payload(_n_methylbenzamide()), "N-methylbenzamide")
+
+def _n_phenylbenzamide():               # both sides aromatic (R7)
+    a = benzene_ring("A")               # acid-side ring
+    c = add_atom(a, "C")
+    bond(a, 0, c)
+    attach_atom(a, c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, c, n)
+    ring2_offset = len(a)
+    ring2 = benzene_ring("A")           # N-side ring
+    for atom in ring2:
+        atom["bonds"] = [{"to": b["to"] + ring2_offset, "order": b["order"]} for b in atom["bonds"]]
+    a.extend(ring2)
+    bond(a, n, ring2_offset)
+    return a
+
+CASES["n_phenylbenzamide"] = exact(payload(_n_phenylbenzamide()), "N-phenylbenzamide")
+
+def _n_methyl_n_phenylethanamide():     # tertiary, one ring N-side (R7)
+    a = new_atoms()
+    acid_c = add_atom(a, "C")
+    attach_chain(a, acid_c, 1)          # ethanoyl: acid_c + 1 tail carbon
+    attach_atom(a, acid_c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, acid_c, n)
+    bond(a, n, add_atom(a, "C"))        # N-methyl
+    ring_offset = len(a)
+    ring = benzene_ring("A")
+    for atom in ring:
+        atom["bonds"] = [{"to": b["to"] + ring_offset, "order": b["order"]} for b in atom["bonds"]]
+    a.extend(ring)
+    bond(a, n, ring_offset)             # N-phenyl
+    return a
+
+# alphabetical N-order holds: methyl < phenyl
+CASES["n_methyl_n_phenylethanamide"] = exact(
+    payload(_n_methyl_n_phenylethanamide()), "N-methyl-N-phenylethanamide")
+
+def _nn_diphenylethanamide():           # tertiary, two ring N-sides (R7)
+    a = new_atoms()
+    acid_c = add_atom(a, "C")
+    attach_chain(a, acid_c, 1)
+    attach_atom(a, acid_c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, acid_c, n)
+    for _ in range(2):
+        ring_offset = len(a)
+        ring = benzene_ring("A")
+        for atom in ring:
+            atom["bonds"] = [{"to": b["to"] + ring_offset, "order": b["order"]} for b in atom["bonds"]]
+        a.extend(ring)
+        bond(a, n, ring_offset)
+    return a
+
+CASES["nn_diphenylethanamide"] = exact(payload(_nn_diphenylethanamide()), "N,N-diphenylethanamide")
+
+def _nn_dimethylbenzamide():            # tertiary, ring acid side (R7)
+    a = benzene_ring("A")
+    acid_c = add_atom(a, "C")
+    bond(a, 0, acid_c)
+    attach_atom(a, acid_c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, acid_c, n)
+    bond(a, n, add_atom(a, "C"))        # N-methyl
+    bond(a, n, add_atom(a, "C"))        # N-methyl
+    return a
+
+CASES["nn_dimethylbenzamide"] = exact(payload(_nn_dimethylbenzamide()), "N,N-dimethylbenzamide")
+
+# ── Wave 4 / E6 stage (e) negatives ──
+def _paracetamol_shape():               # ring-substituted N-side
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    c = add_atom(a, "C")
+    bond(a, n, c)
+    attach_chain(a, c, 1)
+    attach_atom(a, c, "O", order=2)
+    attach_atom(a, 3, "O")              # ring OH, para to the N attachment
+    return a
+
+CASES["paracetamol_shape_should_reject"] = reject(payload(_paracetamol_shape()))
+
+def _n_phenyl_imide():                  # 2 acid carbons on N — existing throw
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    for _ in range(2):
+        c = add_atom(a, "C")
+        bond(a, n, c)
+        attach_chain(a, c, 1)
+        attach_atom(a, c, "O", order=2)
+    return a
+
+CASES["n_phenyl_imide_should_reject"] = reject(payload(_n_phenyl_imide()))
+
+def _n_methyl_3_nitrobenzamide():
+    # Substituted benzamide acid ring: rejects already in Phase E via
+    # TryMatchBenzoylSide's side.Count==8 gate. R8's explicit ester-only
+    # throw lands in Phase F (different reason, same reject status) - keep
+    # this test from Phase E onward regardless (§11).
+    a = benzene_ring("A")
+    c = add_atom(a, "C")
+    bond(a, 0, c)
+    attach_atom(a, c, "O", order=2)
+    n = add_atom(a, "N")
+    bond(a, c, n)
+    bond(a, n, add_atom(a, "C"))        # N-methyl
+    attach_nitro(a, 2)                  # ring nitro substituent
+    return a
+
+CASES["n_methyl_3_nitrobenzamide_should_reject"] = reject(payload(_n_methyl_3_nitrobenzamide()))
+
 # ── Adversarial / malformed input: must not crash the server ──
 CASES["empty_atoms_list"] = no_crash({"atoms": [], "specificationSet": "AllGroups"})
 CASES["out_of_range_bond_index"] = no_crash({
