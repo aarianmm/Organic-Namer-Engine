@@ -1467,6 +1467,56 @@ def _methyl_4_carboxybenzoate():        # -COOH substituent: unmerged, multi-gro
 
 CASES["methyl_4_carboxybenzoate_should_reject"] = reject(payload(_methyl_4_carboxybenzoate()))
 
+# ── Wave 4: tertiary aromatic amines (aliphatic tertiary amines stay rejected) ──
+def _nn_dimethylphenylamine():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    bond(a, n, add_atom(a, "C"))         # N-methyl
+    bond(a, n, add_atom(a, "C"))         # N-methyl
+    return a
+
+CASES["nn_dimethylphenylamine"] = exact(payload(_nn_dimethylphenylamine()), "N,N-dimethylphenylamine")
+
+def _n_ethyl_n_methylphenylamine():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    bond(a, n, add_atom(a, "C"))         # N-methyl
+    et = add_atom(a, "C")
+    bond(a, n, et)
+    attach_chain(a, et, 1)               # N-ethyl
+    return a
+
+CASES["n_ethyl_n_methylphenylamine"] = exact(
+    payload(_n_ethyl_n_methylphenylamine()), "N-ethyl-N-methylphenylamine")
+
+def _triphenylamine():
+    a = new_atoms()
+    n = add_atom(a, "N")
+    for _ in range(3):
+        ring_offset = len(a)
+        ring = benzene_ring("A")
+        for atom in ring:
+            atom["bonds"] = [{"to": b["to"] + ring_offset, "order": b["order"]} for b in atom["bonds"]]
+        a.extend(ring)
+        bond(a, n, ring_offset)
+    return a
+
+CASES["triphenylamine_should_reject"] = reject(payload(_triphenylamine()))
+
+def _nn_dimethyl_4_methylphenylamine():  # substituted ring
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    bond(a, n, add_atom(a, "C"))
+    bond(a, n, add_atom(a, "C"))
+    attach_chain(a, 3, 1)                 # ring methyl substituent, para
+    return a
+
+CASES["nn_dimethyl_4_methylphenylamine_should_reject"] = reject(
+    payload(_nn_dimethyl_4_methylphenylamine()))
+
 # ── Adversarial / malformed input: must not crash the server ──
 CASES["empty_atoms_list"] = no_crash({"atoms": [], "specificationSet": "AllGroups"})
 CASES["out_of_range_bond_index"] = no_crash({

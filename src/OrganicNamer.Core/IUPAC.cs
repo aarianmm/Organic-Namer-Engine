@@ -449,13 +449,15 @@ namespace OrganicNamer.Core
                                           .Where(n => atoms.Atoms[n].Name == "Carbon").ToArray();
             List<int> acidCarbons = FindAcidCarbons(bridgeIndex);
 
-            // Tertiary N-bridge (3 carbon neighbours): amide only. Checked BEFORE
-            // SplitAtBridgingAtom, which rejects ≠2 neighbours.
+            // Tertiary N-bridge (3 carbon neighbours): amide or aromatic amine only.
+            // Checked BEFORE SplitAtBridgingAtom, which rejects ≠2 neighbours.
             if (bridgeSymbol == "N" && carbonNeighbours.Length == 3)
             {
                 if (acidCarbons.Count == 1)
                     return NameTertiaryAmide(bridgeIndex);
-                throw new Exception("Tertiary amines and N-centred imides are not supported");
+                if (acidCarbons.Count == 0)
+                    return NameTertiaryAromaticAmine(bridgeIndex);  // throws unless exactly one ring side
+                throw new Exception("N-centred imides are not supported");
             }
 
             var (sideA, sideB) = atoms.SplitAtBridgingAtom(bridgeIndex); // exactly-2 + ring guard
@@ -788,6 +790,25 @@ namespace OrganicNamer.Core
 
             string nPrefix = BuildNSubstituentPrefix(nSubNames);                     // "N,N-dimethyl"
             return new[] { nPrefix + AcidSideName(acid, AcidClass.Amide) };          // "N,N-dimethylethanamide"
+        }
+
+        // N,N-dialkyl aromatic amines. Aliphatic tertiary amines (trimethylamine) stay
+        // rejected — deliberate: only the aromatic form is asked for, and the ring
+        // being forced as the base is the same rule NameSecondaryAmine already applies.
+        private string[] NameTertiaryAromaticAmine(int bridgeIndex)
+        {
+            List<List<int>> sides = atoms.SplitAtBridgingAtomMultiway(bridgeIndex);
+            List<SideInfo> infos = sides.Select(ClassifySide).ToList();
+
+            int ringCount = infos.Count(s => s.Kind == SideKind.AromaticRing);
+            if (ringCount != 1 || infos.Any(s => s.Kind != SideKind.AromaticRing
+                                              && s.Kind != SideKind.PlainAlkyl))
+                throw new Exception("Tertiary amines are only supported with exactly one aromatic side");
+
+            var nSubNames = infos.Where(s => s.Kind == SideKind.PlainAlkyl)
+                                 .Select(AlkylSideName).ToList();
+            string nPrefix = BuildNSubstituentPrefix(nSubNames);                     // "N,N-dimethyl"
+            return new[] { nPrefix + SpecificationData.AromaticHeteroatomParentNames["C-N"] };
         }
 
         // ── Wave 2 / G1: unified substituent namer ─────────────────────────────────
