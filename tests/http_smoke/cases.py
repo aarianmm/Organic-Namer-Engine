@@ -1391,6 +1391,82 @@ def _n_methyl_3_nitrobenzamide():
 
 CASES["n_methyl_3_nitrobenzamide_should_reject"] = reject(payload(_n_methyl_3_nitrobenzamide()))
 
+# ── Wave 4 / E6: substituted benzoate ring sides (Phase F, esters only) ──
+def _methyl_3_nitrobenzoate():          # end-state flagship: E1+E2+E3+E4+E6
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_nitro(a, 2)
+    return a
+
+CASES["methyl_3_nitrobenzoate"] = exact(payload(_methyl_3_nitrobenzoate()), "methyl 3-nitrobenzoate")
+
+def _methyl_2_hydroxybenzoate():
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_atom(a, 1, "O")
+    return a
+
+CASES["methyl_2_hydroxybenzoate"] = exact(payload(_methyl_2_hydroxybenzoate()), "methyl 2-hydroxybenzoate")
+
+def _methyl_4_aminobenzoate():
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_atom(a, 3, "N")
+    return a
+
+CASES["methyl_4_aminobenzoate"] = exact(payload(_methyl_4_aminobenzoate()), "methyl 4-aminobenzoate")
+
+def _methyl_35_dinitrobenzoate():       # anchored numbering, n >= 3
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_nitro(a, 2)
+    attach_nitro(a, 4)
+    return a
+
+CASES["methyl_35_dinitrobenzoate"] = exact(payload(_methyl_35_dinitrobenzoate()), "methyl 3,5-dinitrobenzoate")
+
+def _methyl_2_chlorobenzoate():
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_atom(a, 1, "Cl")
+    return a
+
+CASES["methyl_2_chlorobenzoate"] = exact(payload(_methyl_2_chlorobenzoate()), "methyl 2-chlorobenzoate")
+
+def _ethyl_4_methylbenzoate():
+    a = benzene_ring("A")
+    ethyl_c = add_atom(a, "C")
+    attach_chain(a, ethyl_c, 1)
+    ester_bridge(a, 0, ethyl_c)
+    attach_chain(a, 3, 1)
+    return a
+
+CASES["ethyl_4_methylbenzoate"] = exact(payload(_ethyl_4_methylbenzoate()), "ethyl 4-methylbenzoate")
+
+# ── Phase F negatives ──
+def _methyl_4_formylbenzoate():         # -CHO substituent: Q4 tip-group throw
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_acyl(a, 3)
+    return a
+
+CASES["methyl_4_formylbenzoate_should_reject"] = reject(payload(_methyl_4_formylbenzoate()))
+
+def _methyl_4_carboxybenzoate():        # -COOH substituent: unmerged, multi-group throw
+    a = benzene_ring("A")
+    methyl_c = add_atom(a, "C")
+    ester_bridge(a, 0, methyl_c)
+    attach_carboxyl(a, 3)
+    return a
+
+CASES["methyl_4_carboxybenzoate_should_reject"] = reject(payload(_methyl_4_carboxybenzoate()))
+
 # ── Adversarial / malformed input: must not crash the server ──
 CASES["empty_atoms_list"] = no_crash({"atoms": [], "specificationSet": "AllGroups"})
 CASES["out_of_range_bond_index"] = no_crash({

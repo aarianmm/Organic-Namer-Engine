@@ -575,7 +575,11 @@ namespace OrganicNamer.Core
             HashSet<int> sideSet = new HashSet<int>(side);
             int[] ringNeighbours = atoms.AdjacentAtoms(attach)
                 .Where(n => sideSet.Contains(n) && atoms.Atoms[n].Name == "Carbon").ToArray();
-            if (ringNeighbours.Length != 1 || side.Count != 8)
+            // Phase F (§12): >= 8, not == 8 — every side atom beyond {acid C, carbonyl
+            // O} is necessarily reachable only through the ring (the acid carbon's four
+            // bonds are fully spoken for: bridge O + carbonyl O + rc), so "extra atoms"
+            // ≡ "ring substituents" — no separate completeness check needed.
+            if (ringNeighbours.Length != 1 || side.Count < 8)
                 return null;
             return TryFindAromaticRing(ringNeighbours[0], sideSet);
         }
@@ -632,7 +636,7 @@ namespace OrganicNamer.Core
             }
             if (side.Kind == SideKind.AromaticAcidSide)
             {
-                return cls switch
+                string stem = cls switch
                 {
                     AcidClass.Ester => SpecificationData.AromaticEsterAcidStem,   // "benzoate"
                     AcidClass.Amide => SpecificationData.AromaticAmideAcidStem,   // "benzamide"
@@ -640,6 +644,33 @@ namespace OrganicNamer.Core
                     AcidClass.Anhydride => throw new Exception("Aromatic acid anhydrides are not supported"),
                     _ => throw new Exception("Unknown acid class")
                 };
+
+                // Phase F (§12): ring substituents on the benzoate/benzamide acid side.
+                // Safe with PRE-MERGE groups (the bridged path never merges — Constraint
+                // 1): a ring -COOH/-CHO/-CONH2/-COCl presents unmerged and rejects via
+                // G1's tip-group/multi-group guards rather than misnaming.
+                List<int> ring = side.RingAtoms!;
+                HashSet<int> ringSet = new HashSet<int>(ring);
+                var ringSubs = atoms.GetRingSubstituents(ring)
+                    .Where(s => s.atomIndex != side.AttachIndex)   // drop the acid carbon itself
+                    .ToList();
+                if (ringSubs.Count == 0)
+                    return stem;
+                if (cls != AcidClass.Ester)
+                    // R8: the N-prefix scaffold can't interleave locant kinds with a
+                    // ring-numeric prefix (would sort as "N-methyl-3-bromobenzamide"
+                    // instead of the correct "3-bromo-N-methylbenzamide") — esters are
+                    // immune because the alkyl word is a separate leading token.
+                    throw new Exception("Substituted aromatic acid sides are only supported for esters");
+
+                var named = ringSubs
+                    .Select(s => (s.ringPosition,
+                                  name: NameSubstituent(ring[s.ringPosition], s.atomIndex, ringSet,
+                                                        allowSuffixCapableTip: false)))
+                    .ToList();
+                (int[] numbering, List<string> subNames) =
+                    FindBestRingNumbering(ring, named, anchorPos: 0);   // acid carbon's ring C = locant 1
+                return FormatName(BuildRingPrefixName(numbering, subNames) + stem);
             }
             throw new Exception("This side cannot be named as an acid side");
         }
