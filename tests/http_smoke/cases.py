@@ -16,7 +16,7 @@ from builders import (
     new_atoms, add_atom, bond, carbon_ring, benzene_ring,
     attach_chain, attach_atom, attach_branch, attach_hydroxymethyl,
     attach_chloromethyl, attach_carboxyl, attach_acyl, attach_nitrile,
-    attach_vinyl, attach_nitro, ring_with_chain_listed_first, payload,
+    attach_vinyl, attach_nitro, attach_bridged_arm, ring_with_chain_listed_first, payload,
 )
 
 
@@ -499,9 +499,10 @@ def _anisole():
     bond(a, o, c)
     return a
 
-# ring + bridge: bridging exit would misname as methoxyhexane, cyclic exit as
-# hydroxybenzene - the constructor guard must reject the combination instead
-CASES["anisole_should_reject"] = reject(payload(_anisole()))
+# Wave 4 (E6 stage a) flagship: the O-bridge-on-ring shape routes to the cyclic
+# path and names as a substituted benzene, not the misnamed "methoxyhexane"
+# (bridged exit) or "hydroxybenzene" (cyclic exit dropping the methyl) traps.
+CASES["methoxybenzene"] = exact(payload(_anisole()), "methoxybenzene")
 
 def _heteroatom_ring(carbon_count, hetero_element):
     """Ring closed THROUGH the heteroatom (THF, ethylene oxide, pyrrolidine).
@@ -949,6 +950,131 @@ def _methyl_nitroethanoate():          # nitro on a bridged (ester) side
     return a
 
 CASES["methyl_nitroethanoate_should_reject"] = reject(payload(_methyl_nitroethanoate()))
+
+# ── Wave 4 / E6 stage (a): aromatic and ring ethers (alkoxy substituents) ──
+def _ethoxybenzene():
+    a = benzene_ring("A")
+    attach_bridged_arm(a, 0, "O", 2)
+    return a
+
+CASES["ethoxybenzene"] = exact(payload(_ethoxybenzene()), "ethoxybenzene")
+
+def _methoxycyclohexane():
+    a = carbon_ring(6)
+    attach_bridged_arm(a, 0, "O", 1)
+    return a
+
+CASES["methoxycyclohexane"] = exact(payload(_methoxycyclohexane()), "methoxycyclohexane")
+
+def _1_methoxy_2_methylcyclohexane():
+    a = carbon_ring(6)
+    attach_bridged_arm(a, 0, "O", 1)
+    attach_chain(a, 1, 1)
+    return a
+
+CASES["1_methoxy_2_methylcyclohexane"] = exact(
+    payload(_1_methoxy_2_methylcyclohexane()), "1-methoxy-2-methylcyclohexane")  # alphabetical: methoxy < methyl
+
+def _2_methoxyphenol():
+    a = benzene_ring("A")
+    attach_atom(a, 0, "O")             # phenol OH — the retained-parent anchor
+    attach_bridged_arm(a, 1, "O", 1)
+    return a
+
+CASES["2_methoxyphenol"] = exact(payload(_2_methoxyphenol()), "2-methoxyphenol")
+
+def _4_methoxybenzaldehyde():
+    a = benzene_ring("A")
+    attach_acyl(a, 0)                  # -CHO — the retained carbon-parent anchor
+    attach_bridged_arm(a, 3, "O", 1)
+    return a
+
+CASES["4_methoxybenzaldehyde"] = exact(payload(_4_methoxybenzaldehyde()), "4-methoxybenzaldehyde")
+
+def _1_methoxy_4_nitrobenzene():
+    a = benzene_ring("A")
+    attach_bridged_arm(a, 0, "O", 1)
+    attach_nitro(a, 3)
+    return a
+
+CASES["1_methoxy_4_nitrobenzene"] = exact(payload(_1_methoxy_4_nitrobenzene()), "1-methoxy-4-nitrobenzene")
+
+# ── Wave 4 / E6 stage (a) negatives: ether shapes that must stay rejected ──
+def _diphenyl_ether():
+    a = benzene_ring("A")
+    o = add_atom(a, "O")
+    bond(a, 0, o)
+    ring2_offset = len(a)
+    ring2 = benzene_ring("A")
+    for atom in ring2:
+        atom["bonds"] = [{"to": b["to"] + ring2_offset, "order": b["order"]} for b in atom["bonds"]]
+    a.extend(ring2)
+    bond(a, o, ring2_offset)
+    return a
+
+CASES["diphenyl_ether_should_reject"] = reject(payload(_diphenyl_ether()))
+
+def _benzyl_methyl_ether():             # Ph-CH2-O-CH3 — O not on a ring carbon
+    a = benzene_ring("A")
+    ch2 = attach_chain(a, 0, 1)[0]
+    attach_bridged_arm(a, ch2, "O", 1)
+    return a
+
+CASES["benzyl_methyl_ether_should_reject"] = reject(payload(_benzyl_methyl_ether()))
+
+def _dihydrobenzofuran():
+    # 2,3-dihydrobenzofuran: benzene C1-C6; O bonded to C1 and CH2a; CH2a-CH2b;
+    # CH2b bonded to C2. The R5 fused-guard pin (§8): without the
+    # adjacent-to-blocked check, this arm looks like a clean unbranched
+    # saturated "ethoxy" and would silently amputate the fusion.
+    a = benzene_ring("A")
+    o = add_atom(a, "O")
+    bond(a, 0, o)
+    ch2a = add_atom(a, "C")
+    bond(a, o, ch2a)
+    ch2b = add_atom(a, "C")
+    bond(a, ch2a, ch2b)
+    bond(a, ch2b, 1)                    # closes the fused ring back onto C2
+    return a
+
+CASES["dihydrobenzofuran_should_reject"] = reject(payload(_dihydrobenzofuran()))
+
+def _phenyl_vinyl_ether():              # unsaturated arm
+    a = benzene_ring("A")
+    o = add_atom(a, "O")
+    bond(a, 0, o)
+    c1 = add_atom(a, "C")
+    bond(a, o, c1)
+    c2 = add_atom(a, "C")
+    bond(a, c1, c2, 2)
+    return a
+
+CASES["phenyl_vinyl_ether_should_reject"] = reject(payload(_phenyl_vinyl_ether()))
+
+def _isopropoxybenzene():               # branched arm
+    a = benzene_ring("A")
+    o = add_atom(a, "O")
+    bond(a, 0, o)
+    attach_branch(a, o, "isopropyl")
+    return a
+
+CASES["isopropoxybenzene_should_reject"] = reject(payload(_isopropoxybenzene()))
+
+def _2_chloroethoxybenzene():           # heteroatom in the arm
+    a = benzene_ring("A")
+    _, arm = attach_bridged_arm(a, 0, "O", 2)
+    attach_atom(a, arm[-1], "Cl")
+    return a
+
+CASES["2_chloroethoxybenzene_should_reject"] = reject(payload(_2_chloroethoxybenzene()))
+
+def _12_dimethoxybenzene():             # multi-bridge (R12) — message changes, status doesn't
+    a = benzene_ring("A")
+    attach_bridged_arm(a, 0, "O", 1)
+    attach_bridged_arm(a, 1, "O", 1)
+    return a
+
+CASES["12_dimethoxybenzene_should_reject"] = reject(payload(_12_dimethoxybenzene()))
 
 # ── Adversarial / malformed input: must not crash the server ──
 CASES["empty_atoms_list"] = no_crash({"atoms": [], "specificationSet": "AllGroups"})

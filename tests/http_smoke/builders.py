@@ -44,6 +44,15 @@ def benzene_ring(pattern="A"):
     return carbon_ring(6, orders)
 
 
+def attach_bridged_arm(atoms, attach_to, bridge_element, arm_len):
+    """Attach  -X-(CH2)n-H  through a bridging heteroatom X (e.g. the -O-CH3
+    arm of an alkoxy substituent). Returns (bridge_index, [arm carbon indices])."""
+    x = add_atom(atoms, bridge_element)
+    bond(atoms, attach_to, x)
+    arm = attach_chain(atoms, x, arm_len)
+    return x, arm
+
+
 def attach_chain(atoms, attach_to, length):
     """Attach a straight (unbranched) alkyl chain of `length` carbons to `attach_to`.
     Returns the list of new carbon indices, chain[0] is bonded to attach_to."""

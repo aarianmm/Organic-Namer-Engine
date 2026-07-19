@@ -764,6 +764,18 @@ namespace OrganicNamer.Core
                 throw new Exception($"No prefix name available for substituent '{poly.GroupFormula}'");
             }
 
+            // Wave 4 (E6): alkoxy substituents (-O-R on a ring). O only — the N analogue
+            // must keep throwing (an N-alkyl arm belongs to the bridged amine path;
+            // naming it here would drop the N-substituent, the N-analogue of the
+            // anisole trap).
+            if (atoms.Atoms[attachIndex].Symbol == "O")
+            {
+                int[] outside = atoms.AdjacentAtoms(attachIndex)
+                    .Where(n => !blocked.Contains(n)).ToArray();
+                if (outside.Length == 1 && atoms.Atoms[outside[0]].Name == "Carbon")
+                    return NameAlkoxyArm(attachIndex, outside[0], blocked);
+            }
+
             if (atoms.AdjacentAtoms(attachIndex).Any(n => !blocked.Contains(n)))
                 throw new Exception("Substituents extending beyond a single heteroatom are not supported");
 
@@ -775,6 +787,32 @@ namespace OrganicNamer.Core
             // Replaces GetSubstituentName's symbol.ToLower() fallback, which silently
             // emitted "cl" under specs with no halo entries (Q1). Reject instead.
             throw new Exception($"No prefix name available for substituent '{formula}'");
+        }
+
+        // Straight, saturated, pure-carbon arm only ("methoxy", "ethoxy", ...). Mirrors
+        // ClassifySide's plain-alkyl loop. The adjacent-to-blocked check is load-bearing,
+        // not hygiene: without it, a fused-ring arm (e.g. 2,3-dihydrobenzofuran's
+        // -O-CH2-CH2- closing back onto the ring) would present as a clean, unbranched,
+        // saturated all-carbon arm and silently amputate the fusion.
+        private string NameAlkoxyArm(int etherOxygen, int firstCarbon, HashSet<int> blocked)
+        {
+            var armBlocked = new HashSet<int>(blocked) { etherOxygen };
+            List<int> arm = atoms.CollectReachable(firstCarbon, armBlocked);
+            foreach (int idx in arm)
+            {
+                if (atoms.Atoms[idx].Name != "Carbon")
+                    throw new Exception("Alkoxy substituents carrying further heteroatoms are not supported");
+                if (atoms.AdjacentAtoms(idx).Any(n => blocked.Contains(n)))
+                    throw new Exception("Fused or bridged ring systems are not supported");
+                if (groups.Any(g => g is CarbonCarbonGroup && g.Involves(idx)))
+                    throw new Exception("Unsaturated alkoxy substituents are not supported");
+                int limit = (idx == firstCarbon) ? 1 : 2;
+                if (atoms.AlkylCounter(idx) > limit)
+                    throw new Exception("Branched alkoxy substituents are not supported");
+            }
+            if (arm.Count >= spec.alkylNames.Length)
+                throw new Exception("Alkoxy substituent is too long to name");
+            return FormatName(spec.alkylNames[arm.Count] + "oxy");   // meth|a + oxy -> "methoxy"
         }
 
         // Carbon substituent grammar (Wave 2, per ruling D4):
