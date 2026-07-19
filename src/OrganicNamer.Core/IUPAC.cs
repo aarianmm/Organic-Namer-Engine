@@ -684,9 +684,33 @@ namespace OrganicNamer.Core
             // methoxymethane, methoxyethane, ethoxypropane — spec.middle[""] ("an|e")
             // rather than a hardcoded suffix
 
-        private string[] NameSecondaryAmine(List<int> sideA, List<int> sideB) =>
-            NameSymmetricBridge(sideA, sideB, "yl", "an|amine", "N-");
-            // N-methylethanamine, N-ethylpropanamine
+        // E6 (d): aromatic secondary amines. The ring, when present, is FORCED as the
+        // base — never Min/Max length selection like the all-alkyl case — because the
+        // base name is G4's retained parent string, not a numbered alkyl chain.
+        private string[] NameSecondaryAmine(List<int> sideA, List<int> sideB)
+        {
+            SideInfo a = ClassifySide(sideA);
+            SideInfo b = ClassifySide(sideB);
+            bool aRing = a.Kind == SideKind.AromaticRing;
+            bool bRing = b.Kind == SideKind.AromaticRing;
+
+            if (aRing && bRing)
+                throw new Exception("Diarylamines are not supported");            // diphenylamine
+
+            if (aRing || bRing)
+            {
+                SideInfo alkyl = aRing ? b : a;
+                if (alkyl.Kind != SideKind.PlainAlkyl)
+                    throw new Exception("Amines with this side combination are not supported");
+                string nPrefix = BuildNSubstituentPrefix(
+                    new List<string> { AlkylSideName(alkyl) });                   // "N-methyl"
+                return new[] { nPrefix
+                    + SpecificationData.AromaticHeteroatomParentNames["C-N"] };   // "phenylamine"
+            }
+
+            return NameSymmetricBridge(sideA, sideB, "yl", "an|amine", "N-");
+            // N-methylethanamine, N-ethylpropanamine — unchanged path
+        }
 
         private string[] NameEster(List<int> sideA, List<int> sideB)
         {

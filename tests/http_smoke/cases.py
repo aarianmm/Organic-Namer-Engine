@@ -1189,6 +1189,69 @@ def _aspirin():                         # 2-(ethanoyloxy)benzoic acid — record
 
 CASES["aspirin_should_reject"] = reject(payload(_aspirin()))
 
+# ── Wave 4 / E6 stage (d): aromatic secondary amines ──
+def _n_methylphenylamine():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    methyl = add_atom(a, "C")
+    bond(a, n, methyl)
+    return a
+
+# The master plan's trap test: assert exactly "N-methylphenylamine", never the
+# misnamed "phenylamine" (which would silently drop the N-methyl).
+CASES["n_methylphenylamine"] = exact(payload(_n_methylphenylamine()), "N-methylphenylamine")
+
+def _n_ethylphenylamine():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    ethyl_c = add_atom(a, "C")
+    bond(a, n, ethyl_c)
+    attach_chain(a, ethyl_c, 1)
+    return a
+
+CASES["n_ethylphenylamine"] = exact(payload(_n_ethylphenylamine()), "N-ethylphenylamine")
+
+def _n_butylphenylamine():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    butyl_c = add_atom(a, "C")
+    bond(a, n, butyl_c)
+    attach_chain(a, butyl_c, 3)
+    return a
+
+# Forced-base rule (R6/§10): the ring wins as the base even though the butyl
+# side has more carbons than the ring — never Min/Max length selection.
+CASES["n_butylphenylamine"] = exact(payload(_n_butylphenylamine()), "N-butylphenylamine")
+
+# ── Wave 4 / E6 stage (d) negatives ──
+def _diphenylamine():
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    ring2_offset = len(a)
+    ring2 = benzene_ring("A")
+    for atom in ring2:
+        atom["bonds"] = [{"to": b["to"] + ring2_offset, "order": b["order"]} for b in atom["bonds"]]
+    a.extend(ring2)
+    bond(a, n, ring2_offset)
+    return a
+
+CASES["diphenylamine_should_reject"] = reject(payload(_diphenylamine()))
+
+def _4_methyl_n_methylphenylamine():    # substituted ring — R4's side.Count==6 gate
+    a = benzene_ring("A")
+    n = add_atom(a, "N")
+    bond(a, 0, n)
+    methyl_n = add_atom(a, "C")
+    bond(a, n, methyl_n)
+    attach_chain(a, 3, 1)                # ring methyl substituent, para position
+    return a
+
+CASES["4_methyl_n_methylphenylamine_should_reject"] = reject(payload(_4_methyl_n_methylphenylamine()))
+
 # ── Adversarial / malformed input: must not crash the server ──
 CASES["empty_atoms_list"] = no_crash({"atoms": [], "specificationSet": "AllGroups"})
 CASES["out_of_range_bond_index"] = no_crash({
