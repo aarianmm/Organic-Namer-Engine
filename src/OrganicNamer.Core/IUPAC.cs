@@ -610,26 +610,38 @@ namespace OrganicNamer.Core
         private string AlkylSideName(SideInfo side) => side.Kind switch
         {
             SideKind.PlainAlkyl => FormatName(spec.alkylNames[side.CarbonCount] + "yl"),
+            SideKind.AromaticRing => SpecificationData.AromaticAlkylSideName,   // "phenyl"
             _ => throw new Exception("This side cannot be named as an alkyl substituent")
         };
 
         // Name an acid side for a given functional class ("ethanoate"/"ethanamide"/"ethanoic").
-        // The class owns its suffix; E6 teaches this method the retained aromatic forms
-        // (benzoate / benzamide / benzoic) for an acid side whose R is a ring.
+        // Each kind owns its own suffix/stem selection — Phase F extends the
+        // AromaticAcidSide branch with ring-prefix naming for substituted rings.
         private string AcidSideName(SideInfo side, AcidClass cls)
         {
-            string suffix = cls switch
+            if (side.Kind == SideKind.AcidSide)
             {
-                AcidClass.Ester => "anoate",       // NOT "an|oate": elision would strip the o. §5
-                AcidClass.Amide => "anamide",      // NOT "an|amide"
-                AcidClass.Anhydride => "anoic",    // NOT "an|oic"
-                _ => throw new Exception("Unknown acid class")
-            };
-            return side.Kind switch
+                string suffix = cls switch
+                {
+                    AcidClass.Ester => "anoate",       // NOT "an|oate": elision would strip the o. §5
+                    AcidClass.Amide => "anamide",      // NOT "an|amide"
+                    AcidClass.Anhydride => "anoic",    // NOT "an|oic"
+                    _ => throw new Exception("Unknown acid class")
+                };
+                return FormatName(spec.alkylNames[side.CarbonCount] + suffix);
+            }
+            if (side.Kind == SideKind.AromaticAcidSide)
             {
-                SideKind.AcidSide => FormatName(spec.alkylNames[side.CarbonCount] + suffix),
-                _ => throw new Exception("This side cannot be named as an acid side")
-            };
+                return cls switch
+                {
+                    AcidClass.Ester => SpecificationData.AromaticEsterAcidStem,   // "benzoate"
+                    AcidClass.Amide => SpecificationData.AromaticAmideAcidStem,   // "benzamide"
+                    // E6xE7: benzoic anhydride — no aromatic-anhydride vocabulary.
+                    AcidClass.Anhydride => throw new Exception("Aromatic acid anhydrides are not supported"),
+                    _ => throw new Exception("Unknown acid class")
+                };
+            }
+            throw new Exception("This side cannot be named as an acid side");
         }
 
         // Build the "N-…" locant scaffold. Uppercase N survives because each substituent word

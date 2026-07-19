@@ -128,5 +128,12 @@ namespace OrganicNamer.Core
                 { "COCH3", "phenylethanone" },
                 { "CHCH2", "ethenylbenzene" },
             };
+
+        // ── Wave 4 / E6: retained strings for bridged-path ring sides ──────────────
+        // ("phenylamine" is reused from AromaticHeteroatomParentNames["C-N"] above —
+        // single source of truth, per G4.)
+        public const string AromaticAlkylSideName = "phenyl";
+        public const string AromaticEsterAcidStem = "benzoate";
+        public const string AromaticAmideAcidStem = "benzamide";
     }
 }

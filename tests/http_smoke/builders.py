@@ -111,6 +111,20 @@ def attach_carboxyl(atoms, attach_to):
     return c
 
 
+def ester_bridge(atoms, acid_attach, alkyl_attach):
+    """Build  acid_attach-C(=O)-O-alkyl_attach  (the acyl C and bridge O are new).
+    Pass acid_attach=None for a methanoate (H on the acyl carbon).
+    Returns (acyl_c, bridge_o)."""
+    c = add_atom(atoms, "C")
+    if acid_attach is not None:
+        bond(atoms, acid_attach, c)
+    attach_atom(atoms, c, "O", order=2)
+    o = add_atom(atoms, "O")
+    bond(atoms, c, o)
+    bond(atoms, o, alkyl_attach)
+    return c, o
+
+
 def attach_acyl(atoms, attach_to, tail_len=0, terminal=None, terminal_order=1):
     """Attach -C(=O)R : tail_len carbons after the carbonyl C, and/or a
     terminal heteroatom on the carbonyl C (Cl for -COCl, N for -CONH2)."""
