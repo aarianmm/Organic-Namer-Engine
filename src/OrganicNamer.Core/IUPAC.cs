@@ -83,20 +83,24 @@ namespace OrganicNamer.Core
             suffixFormula = "";
             suffixRoot = "";
             FindHighestPrioritySuffix();
-            if (possibleChains.Count == 0)
+            // Gate on the FILTERED candidate list, not the raw FindEveryLongestPath
+            // output: CheckBranchValidity may have dropped candidates (or all of
+            // them), and the NarrowDownChainsBy* methods run MaxBy/Min terminals
+            // over allChainsAndBranches that throw on an empty source.
+            if (allChainsAndBranches.Count == 0)
             {
-                throw new Exception("Impossibe to name, as branches must be empty.");
+                throw new Exception("No nameable main chain found: every candidate chain carries a substituent this engine cannot name.");
             }
-            if (possibleChains.Count != 1)
+            if (allChainsAndBranches.Count != 1)
             {
                 NarrowDownChainsByLength();
-                if (possibleChains.Count != 1)
+                if (allChainsAndBranches.Count != 1)
                 {
                     NarrowDownChainsBySuffix();
-                    if (possibleChains.Count != 1)
+                    if (allChainsAndBranches.Count != 1)
                     {
                         NarrowDownChainsByMiddle();
-                        if (possibleChains.Count != 1)
+                        if (allChainsAndBranches.Count != 1)
                         {
                             NarrowDownChainsByPrefixes();
                         }
