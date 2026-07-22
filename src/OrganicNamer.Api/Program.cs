@@ -2,7 +2,18 @@ using OrganicNamer.Core;
 using OrganicNamer.Api;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.WithOrigins("https://alkane.uk", "https://www.alkane.uk")
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
+
 var app = builder.Build();
+
+app.UseCors();
 
 app.MapPost("/api/name", (MoleculeRequest request) =>
 {
