@@ -169,27 +169,46 @@ namespace OrganicNamer.Core
         }
         private void NarrowDownChainsByPrefixes()
         {
-            List<int> prefixesCarbonSums = new List<int>();
+            List<List<int>> prefixLocantSets = new List<List<int>>();
             for (int i = 0; i < allChainsAndBranches.Count; i++)
             {
                 List<int> chain = allChainsAndBranches[i].chain;
                 List<List<int>> branches = allChainsAndBranches[i].branches;
                 List<List<int>> prefixCarbons = FindPrefixCarbons(chain, branches).Values.ToList();
-                int prefixCarbonSum = 0;
-                foreach (List<int> a in prefixCarbons)
-                {
-                    prefixCarbonSum += a.Sum();
-                }
-                prefixesCarbonSums.Add(prefixCarbonSum);
+                List<int> locants = prefixCarbons.SelectMany(a => a).OrderBy(l => l).ToList();
+                prefixLocantSets.Add(locants);
             }
-            int lowestSum = prefixesCarbonSums.Min();
+            // IUPAC: the numbering that wins is the one giving substituents the
+            // lower locants as a *set*, compared term by term at the first point
+            // of difference — not the one with the lower sum. {2,5,5} and {3,3,6}
+            // sum to the same total, but {2,5,5} wins at the first term.
+            List<int> lowestLocants = prefixLocantSets[0];
+            for (int i = 1; i < prefixLocantSets.Count; i++)
+            {
+                if (IsLowerLocantSet(prefixLocantSets[i], lowestLocants))
+                {
+                    lowestLocants = prefixLocantSets[i];
+                }
+            }
             for (int i = allChainsAndBranches.Count - 1; i >= 0; i--)  //negative iter. as mutating size of list
             {
-                if (prefixesCarbonSums[i] != lowestSum)
+                if (!prefixLocantSets[i].SequenceEqual(lowestLocants))
                 {
                     allChainsAndBranches.RemoveAt(i);
                 }
             }
+        }
+        // First point of difference: candidate is lower than current if, at the
+        // first index where they differ, candidate's locant is smaller.
+        private static bool IsLowerLocantSet(List<int> candidate, List<int> current)
+        {
+            int count = Math.Min(candidate.Count, current.Count);
+            for (int i = 0; i < count; i++)
+            {
+                if (candidate[i] < current[i]) return true;
+                if (candidate[i] > current[i]) return false;
+            }
+            return false;
         }
         private void NarrowDownChainsByMiddle()
         {
