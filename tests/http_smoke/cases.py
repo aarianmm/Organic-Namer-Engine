@@ -120,9 +120,14 @@ def _chloromethylbutane():
     attach_chloromethyl(a, c2)
     return a
 
-# Locant is 2, not 3: numbering from the other end of butane gives the lower
-# locant, per IUPAC rules - verified against the live API (see Algorithm-Extension-Plan.md).
-CASES["2_chloromethylbutane"] = exact(payload(_chloromethylbutane()), "2-(chloromethyl)butane")
+# The branch's carbon ties for longest chain with the original butane
+# backbone (both are 4 carbons), so the engine's locant-set tie-break
+# picks the chain giving the lower locant *set* across all prefix
+# substituents as a whole - {1,2} (chloro, methyl) beats {2} (chloromethyl)
+# at the first point of difference. Re-verified against the live API;
+# this superseded the older expectation of "2-(chloromethyl)butane" which
+# treated the chloromethyl-bearing carbon as an unbreakable branch.
+CASES["2_chloromethylbutane"] = exact(payload(_chloromethylbutane()), "1-chloro-2-methylbutane")
 
 # ── Phase 2: aromatic (benzene) ──
 CASES["benzene_pattern_a"] = exact(payload(benzene_ring("A")), "benzene")
