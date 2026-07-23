@@ -1,6 +1,21 @@
 # Organic-Namer-Engine
 A tool for computing the IUPAC name from the structure of an organic chemical
 
+## API
+
+`src/OrganicNamer.Api` is an ASP.NET Core minimal API exposing the namer over HTTP
+(`POST /api/name`, `GET /api/health`). Run it locally with:
+
+```bash
+cd src/OrganicNamer.Api
+dotnet run
+```
+
+Then open `http://localhost:5001/swagger` for interactive Swagger docs, or fetch
+the raw OpenAPI spec from `http://localhost:5001/swagger/v1/swagger.json`. See
+[`examples/README.md`](examples/README.md) for the request/response JSON format,
+sample payloads, and troubleshooting.
+
 ## Input conventions
 
 **Nitro groups (–NO₂):** the JSON schema has no formal-charge field, so

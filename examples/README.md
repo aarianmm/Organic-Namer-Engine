@@ -6,71 +6,51 @@ This directory contains example JSON structures for testing the Organic Namer AP
 
 ### Prerequisites
 
-1. **.NET 10 SDK** - Download from [dotnet.microsoft.com](https://dotnet.microsoft.com/download)
-   ```bash
-   # Verify installation
-   dotnet --version
-   ```
-
-2. **Azure Functions Core Tools v4** - Required to run Azure Functions locally
-   ```bash
-   # macOS (Homebrew)
-   brew tap azure/functions
-   brew install azure-functions-core-tools@4
-
-   # Windows (npm)
-   npm install -g azure-functions-core-tools@4
-
-   # Verify installation
-   func --version
-   ```
+**.NET 10 SDK** - Download from [dotnet.microsoft.com](https://dotnet.microsoft.com/download)
+```bash
+# Verify installation
+dotnet --version
+```
 
 ### Starting the API
 
-1. Open a terminal and navigate to the Functions project:
+1. Open a terminal and navigate to the API project:
    ```bash
-   cd src/OrganicNamer.Functions
+   cd src/OrganicNamer.Api
    ```
 
-2. Build the project:
+2. Run the project:
    ```bash
-   dotnet build
+   dotnet run
    ```
 
-3. Start the local Azure Functions host:
-   ```bash
-   func start
+3. You should see output similar to:
+   ```
+   Now listening on: http://localhost:5001
    ```
 
-4. You should see output similar to:
-   ```
-   Azure Functions Core Tools
-
-   Functions:
-       Health: [GET] http://localhost:7071/api/health
-       NameMolecule: [POST] http://localhost:7071/api/name
-   ```
-
-The API is now running at `http://localhost:7071`.
+The API is now running at `http://localhost:5001`. Interactive Swagger docs for
+every endpoint are at `http://localhost:5001/swagger`, and the raw OpenAPI spec
+is at `http://localhost:5001/swagger/v1/swagger.json`.
 
 ### Testing the API
 
 **Check API health:**
 ```bash
-curl http://localhost:7071/api/health
+curl http://localhost:5001/api/health
 ```
 
 **Name a molecule using an example file:**
 ```bash
 # From the repository root directory
-curl -X POST http://localhost:7071/api/name \
+curl -X POST http://localhost:5001/api/name \
   -H "Content-Type: application/json" \
   -d @examples/ethane.json
 ```
 
 **Name a molecule with inline JSON:**
 ```bash
-curl -X POST http://localhost:7071/api/name \
+curl -X POST http://localhost:5001/api/name \
   -H "Content-Type: application/json" \
   -d '{
     "atoms": [
@@ -84,10 +64,8 @@ curl -X POST http://localhost:7071/api/name \
 
 | Issue | Solution |
 |-------|----------|
-| `func: command not found` | Install Azure Functions Core Tools (see prerequisites) |
-| Port 7071 already in use | Use `func start --port 7072` to use a different port |
+| Port 5001 already in use | Edit `applicationUrl` in `src/OrganicNamer.Api/Properties/launchSettings.json`, or run `dotnet run --urls http://localhost:5002` |
 | Build errors | Run `dotnet restore` then `dotnet build` |
-| "No functions found" | Ensure you're in the `src/OrganicNamer.Functions` directory |
 
 ## Examples
 

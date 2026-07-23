@@ -17,15 +17,24 @@
         }
 
         // Helper classes for JSON input
+
+        /// <summary>A single atom in the molecule graph, identified by its index in the request's atom list.</summary>
         public class AtomInput
         {
+            /// <summary>Element symbol, e.g. "C", "O", "N", "Cl". Case-sensitive, must match the periodic table.</summary>
             public string Element { get; set; } = "";
+
+            /// <summary>Bonds from this atom to other atoms. Hydrogens may be omitted and will be filled in automatically to satisfy valency.</summary>
             public List<BondInput> Bonds { get; set; } = new();
         }
 
+        /// <summary>A bond from the owning atom to another atom in the same request's atom list.</summary>
         public class BondInput
         {
+            /// <summary>Zero-based index into the request's atom list of the atom this bond connects to.</summary>
             public int To { get; set; }
+
+            /// <summary>Bond order: 1 for single, 2 for double, 3 for triple.</summary>
             public int Order { get; set; }
         }
 
