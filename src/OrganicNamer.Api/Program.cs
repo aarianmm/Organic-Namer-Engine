@@ -13,6 +13,8 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader());
 });
 
+builder.Services.AddApiRateLimiting(builder.Configuration);
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -33,6 +35,7 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+app.UseApiRateLimiting(builder.Configuration);
 app.UseCors();
 
 app.UseSwagger();
@@ -93,6 +96,7 @@ app.MapGet("/api/health", () => Results.Ok(new
 }))
 .WithName("Health")
 .WithTags("Health")
-.WithSummary("Report service health and supported specification sets");
+.WithSummary("Report service health and supported specification sets")
+.DisableRateLimiting();
 
 app.Run();
