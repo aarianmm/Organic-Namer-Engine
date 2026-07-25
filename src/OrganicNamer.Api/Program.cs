@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-        policy.WithOrigins("https://alkane.uk", "https://www.alkane.uk")
+        policy.WithOrigins("https://thealkane.com", "https://www.thealkane.com")
             .AllowAnyMethod()
             .AllowAnyHeader());
 });
