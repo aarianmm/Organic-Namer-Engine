@@ -30,6 +30,7 @@ jobs:
           client-id: ${{ secrets.ORGANICNAMERAPI_AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.ORGANICNAMERAPI_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.ORGANICNAMERAPI_AZURE_SUBSCRIPTION_ID }}
+          allow-no-subscriptions: true
 
       - name: Build and push container image to registry
         uses: azure/container-apps-deploy-action@v2
@@ -45,5 +46,4 @@ jobs:
           imageToBuild: organicnameracr.azurecr.io/organicnamer-api:${{ github.sha }}
           _buildArgumentsKey_: |
             _buildArgumentsValues_
-
 
