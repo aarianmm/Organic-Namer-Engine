@@ -1522,6 +1522,72 @@ def _nn_dimethyl_4_methylphenylamine():  # substituted ring
 CASES["nn_dimethyl_4_methylphenylamine_should_reject"] = reject(
     payload(_nn_dimethyl_4_methylphenylamine()))
 
+# ── Locant tie-breaking: suffix/middle sum bug and exact prefix-locant ties ──
+def _heptane_156_triol():             # Defect A: {1,5,6} and {2,3,7} both sum to 12
+    a = _chain(7)
+    attach_atom(a, 0, "O")
+    attach_atom(a, 4, "O")
+    attach_atom(a, 5, "O")
+    return a
+
+CASES["heptane_156_triol"] = exact(payload(_heptane_156_triol()), "heptane-1,5,6-triol")
+
+def _nonane_14_diol():                # control: no tie, must still return one name
+    a = _chain(9)
+    attach_atom(a, 0, "O")
+    attach_atom(a, 3, "O")
+    return a
+
+CASES["nonane_14_diol"] = exact(payload(_nonane_14_diol()), "nonane-1,4-diol")
+
+def _3_ethyl_5_methylheptane():       # Defect B, minimal: exact prefix-locant tie
+    a = _chain(7)
+    attach_chain(a, 2, 2)   # ethyl at C3
+    attach_chain(a, 4, 1)   # methyl at C5
+    return a
+
+CASES["3_ethyl_5_methylheptane"] = exact(payload(_3_ethyl_5_methylheptane()), "3-ethyl-5-methylheptane")
+
+def _4_ethyl_6_methylnonane():        # Defect B, longer chain
+    a = _chain(9)
+    attach_chain(a, 3, 2)   # ethyl at C4
+    attach_chain(a, 5, 1)   # methyl at C6
+    return a
+
+CASES["4_ethyl_6_methylnonane"] = exact(payload(_4_ethyl_6_methylnonane()), "4-ethyl-6-methylnonane")
+
+def _3_chloro_5_methylheptane():      # Defect B, halogen prefix not just alkyl
+    a = _chain(7)
+    attach_atom(a, 2, "Cl")
+    attach_chain(a, 4, 1)
+    return a
+
+CASES["3_chloro_5_methylheptane"] = exact(payload(_3_chloro_5_methylheptane()), "3-chloro-5-methylheptane")
+
+def _3_ethyl_heptamethylhexane():     # the originally reported molecule
+    a = _chain(6)
+    attach_chain(a, 1, 1)   # methyl @2
+    attach_chain(a, 1, 1)   # methyl @2
+    attach_chain(a, 2, 1)   # methyl @3
+    attach_chain(a, 2, 2)   # ethyl @3
+    attach_chain(a, 3, 1)   # methyl @4
+    attach_chain(a, 3, 1)   # methyl @4
+    attach_chain(a, 4, 1)   # methyl @5
+    attach_chain(a, 4, 1)   # methyl @5
+    return a
+
+CASES["3_ethyl_heptamethylhexane"] = exact(
+    payload(_3_ethyl_heptamethylhexane()), "3-ethyl-2,2,3,4,4,5,5-heptamethylhexane")
+
+def _1_ethyl_3_methylcyclohexane():   # ring path: already correct, pins it neutral
+    a = carbon_ring(6)
+    attach_chain(a, 0, 2)   # ethyl @1
+    attach_chain(a, 2, 1)   # methyl @3
+    return a
+
+CASES["1_ethyl_3_methylcyclohexane"] = exact(
+    payload(_1_ethyl_3_methylcyclohexane()), "1-ethyl-3-methylcyclohexane")
+
 # ── Adversarial / malformed input: must not crash the server ──
 CASES["empty_atoms_list"] = no_crash({"atoms": [], "specificationSet": "AllGroups"})
 CASES["out_of_range_bond_index"] = no_crash({
