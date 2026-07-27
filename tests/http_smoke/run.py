@@ -41,8 +41,11 @@ def check(expect, status, body):
             names = json.loads(body).get("names", [])
         except json.JSONDecodeError:
             return False, f"non-JSON response: {body}"
-        if expect["name"] not in names:
-            return False, f"expected name '{expect['name']}', got {names}"
+        # Equality, not membership: a response with the right name plus a
+        # spurious extra name (an unresolved locant tie) must fail this check,
+        # not pass it.
+        if names != [expect["name"]]:
+            return False, f"expected exactly ['{expect['name']}'], got {names}"
         return True, ""
 
     if expect["type"] == "reject":

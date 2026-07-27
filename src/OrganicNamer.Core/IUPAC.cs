@@ -169,63 +169,63 @@ namespace OrganicNamer.Core
         }
         private void NarrowDownChainsByPrefixes()
         {
-            List<List<int>> prefixLocantSets = new List<List<int>>();
+            List<List<(int locant, string name)>> placements = new List<List<(int locant, string name)>>();
             for (int i = 0; i < allChainsAndBranches.Count; i++)
             {
                 List<int> chain = allChainsAndBranches[i].chain;
                 List<List<int>> branches = allChainsAndBranches[i].branches;
-                List<List<int>> prefixCarbons = FindPrefixCarbons(chain, branches).Values.ToList();
-                List<int> locants = prefixCarbons.SelectMany(a => a).OrderBy(l => l).ToList();
-                prefixLocantSets.Add(locants);
+                // Keep each locant's substituent name attached (not just the locant) —
+                // ComparePlacement needs it for the P-14.5.2(f) tie-break below.
+                var substituents = FindPrefixCarbons(chain, branches)
+                    .SelectMany(kv => kv.Value.Select(locant => (locant, name: kv.Key)));
+                placements.Add(PlacementKey(substituents));
             }
-            // IUPAC: the numbering that wins is the one giving substituents the
-            // lower locants as a *set*, compared term by term at the first point
-            // of difference — not the one with the lower sum. {2,5,5} and {3,3,6}
-            // sum to the same total, but {2,5,5} wins at the first term.
-            List<int> lowestLocants = prefixLocantSets[0];
-            for (int i = 1; i < prefixLocantSets.Count; i++)
+            // Ties broken by ComparePlacement — see its comment for the full P-14.5.2
+            // (e)/(f) rationale. This is what actually resolves ties like two chain
+            // numberings both giving substituents locants {2,2,3,3,4,4,5,5}: rule (e)
+            // alone can't tell them apart, so without (f) here every tied candidate
+            // would survive and the caller would see multiple names for one molecule.
+            List<(int locant, string name)> best = placements[0];
+            for (int i = 1; i < placements.Count; i++)
             {
-                if (IsLowerLocantSet(prefixLocantSets[i], lowestLocants))
+                if (ComparePlacement(placements[i], best) < 0)
                 {
-                    lowestLocants = prefixLocantSets[i];
+                    best = placements[i];
                 }
             }
             for (int i = allChainsAndBranches.Count - 1; i >= 0; i--)  //negative iter. as mutating size of list
             {
-                if (!prefixLocantSets[i].SequenceEqual(lowestLocants))
+                if (ComparePlacement(placements[i], best) != 0)
                 {
                     allChainsAndBranches.RemoveAt(i);
                 }
             }
         }
-        // First point of difference: candidate is lower than current if, at the
-        // first index where they differ, candidate's locant is smaller.
-        private static bool IsLowerLocantSet(List<int> candidate, List<int> current)
-        {
-            int count = Math.Min(candidate.Count, current.Count);
-            for (int i = 0; i < count; i++)
-            {
-                if (candidate[i] < current[i]) return true;
-                if (candidate[i] > current[i]) return false;
-            }
-            return false;
-        }
         private void NarrowDownChainsByMiddle()
         {
             string middlePriorityFormula = FindHighestPriorityMiddleFormula();
             string middlePriorityName = spec.middle[middlePriorityFormula].name;
-            List<int> middleCarbonSums = new List<int>();
+            List<List<(int locant, string name)>> placements = new List<List<(int locant, string name)>>();
             for (int i = 0; i < allChainsAndBranches.Count; i++)
             {
                 List<int> chain = allChainsAndBranches[i].chain;
                 List<int> middleCarbons = FindMiddleCarbons(chain)[middlePriorityName];
-                int middleCarbonSum = middleCarbons.Sum();
-                middleCarbonSums.Add(middleCarbonSum);
+                // All of this stage's locants share one group name, so ComparePlacement's
+                // rule-(f) loop is a no-op here — only the rule-(e) locant comparison
+                // (first point of difference, not sum) can decide anything.
+                placements.Add(PlacementKey(middleCarbons.Select(locant => (locant, name: ""))));
             }
-            int lowestSum = middleCarbonSums.Min();
+            List<(int locant, string name)> best = placements[0];
+            for (int i = 1; i < placements.Count; i++)
+            {
+                if (ComparePlacement(placements[i], best) < 0)
+                {
+                    best = placements[i];
+                }
+            }
             for (int i = allChainsAndBranches.Count - 1; i >= 0; i--)
             {
-                if (middleCarbonSums[i] != lowestSum)
+                if (ComparePlacement(placements[i], best) != 0)
                 {
                     allChainsAndBranches.RemoveAt(i);
                 }
@@ -233,18 +233,25 @@ namespace OrganicNamer.Core
         }
         private void NarrowDownChainsBySuffix()
         {
-            List<int> suffixCarbonSums = new List<int>();
+            List<List<(int locant, string name)>> placements = new List<List<(int locant, string name)>>();
             for (int i = 0; i < allChainsAndBranches.Count; i++)
             {
                 List<int> chain = allChainsAndBranches[i].chain;
                 List<int> suffixCarbons = FindSuffixCarbons(chain);
-                int suffixCarbonSum = suffixCarbons.Sum();
-                suffixCarbonSums.Add(suffixCarbonSum);
+                // Single group name for this stage too — see NarrowDownChainsByMiddle.
+                placements.Add(PlacementKey(suffixCarbons.Select(locant => (locant, name: ""))));
             }
-            int lowestSum = suffixCarbonSums.Min();
+            List<(int locant, string name)> best = placements[0];
+            for (int i = 1; i < placements.Count; i++)
+            {
+                if (ComparePlacement(placements[i], best) < 0)
+                {
+                    best = placements[i];
+                }
+            }
             for (int i = allChainsAndBranches.Count - 1; i >= 0; i--)
             {
-                if (suffixCarbonSums[i] != lowestSum)
+                if (ComparePlacement(placements[i], best) != 0)
                 {
                     allChainsAndBranches.RemoveAt(i);
                 }
@@ -379,6 +386,36 @@ namespace OrganicNamer.Core
         // neutralises the '|' elision markers in raw spec words ("meth|ayl" → "methayl").
         private static string AlphaKey(string name) =>
             new string(name.Where(char.IsLetter).ToArray());
+        // Orders one candidate numbering's substituents for comparison: by locant, with
+        // ties at the same locant broken by the name's alphabetisation key. Matches the
+        // citation order NameSegment prints in, so the numbering ComparePlacement picks
+        // and the name that gets printed always agree.
+        private static List<(int locant, string name)> PlacementKey(
+            IEnumerable<(int locant, string name)> substituents) =>
+            substituents.OrderBy(s => s.locant)
+                        .ThenBy(s => AlphaKey(s.name), StringComparer.Ordinal)
+                        .ToList();
+        // Tie-break comparator shared by every "which candidate numbering wins" decision
+        // (chain prefixes/suffix/middle stages, ring numbering): IUPAC P-14.5.2(e) says
+        // the numbering giving substituents the lower locants as a set wins, compared
+        // term-by-term at the first point of difference — that's the first loop, and by
+        // running first it can never be overridden by anything below it. P-14.5.2(f) only
+        // applies when (e) is an exact tie: the numbering giving the lower locant to the
+        // substituent cited first alphanumerically wins — the second loop. Returns <0 if
+        // `a` is the preferred numbering, >0 if `b` is, 0 if genuinely equivalent.
+        private static int ComparePlacement(
+            List<(int locant, string name)> a, List<(int locant, string name)> b)
+        {
+            int n = Math.Min(a.Count, b.Count);
+            for (int i = 0; i < n; i++)          // (e) first point of difference
+                if (a[i].locant != b[i].locant) return a[i].locant.CompareTo(b[i].locant);
+            for (int i = 0; i < n; i++)          // (f) alphanumerical tie-break
+            {
+                int cmp = string.CompareOrdinal(AlphaKey(a[i].name), AlphaKey(b[i].name));
+                if (cmp != 0) return cmp;
+            }
+            return a.Count.CompareTo(b.Count);   // last resort; keeps the order total
+        }
         private string NameSegment(Dictionary<string, List<int>> namesAndCarbonNumbers)
         {
             List<(string numbers, string name)> names = new List<(string, string)>();
@@ -1283,8 +1320,7 @@ namespace OrganicNamer.Core
             int anchorPos = -1) // G4: ring position forced to locant 1 (parent anchor)
         {
             int n = ring.Count;
-            int[]? bestLocants = null;
-            List<string>? bestNames = null;
+            List<(int locant, string name)>? bestPlacement = null;
             int bestStart = 0;
             int bestDirection = 0;
 
@@ -1292,48 +1328,21 @@ namespace OrganicNamer.Core
             {
                 for (int dir = 0; dir < 2; dir++) // 0 = forward, 1 = reverse
                 {
-                    var pairs = new List<(int locant, string name)>();
+                    var raw = new List<(int locant, string name)>();
                     foreach (var (ringPos, name) in substituents)
                     {
                         int locant = dir == 0
                             ? ((ringPos - start + n) % n) + 1
                             : ((start - ringPos + n) % n) + 1;
-                        pairs.Add((locant, name));
+                        raw.Add((locant, name));
                     }
-                    pairs.Sort((a, b) => a.locant != b.locant
-                        ? a.locant.CompareTo(b.locant)
-                        : string.CompareOrdinal(AlphaKey(a.name), AlphaKey(b.name)));
-                    int[] locants = pairs.Select(p => p.locant).ToArray();
-                    List<string> nameList = pairs.Select(p => p.name).ToList();
+                    List<(int locant, string name)> placement = PlacementKey(raw);
 
-                    bool isBetter = false;
-                    if (bestLocants == null)
+                    // Same P-14.5.2(e)/(f) tie-break the chain-numbering stages use —
+                    // see ComparePlacement.
+                    if (bestPlacement == null || ComparePlacement(placement, bestPlacement) < 0)
                     {
-                        isBetter = true;
-                    }
-                    else
-                    {
-                        for (int i = 0; i < locants.Length; i++)
-                        {
-                            if (locants[i] < bestLocants[i]) { isBetter = true; break; }
-                            if (locants[i] > bestLocants[i]) break;
-                        }
-                        // Tiebreaker: alphabetical order of names at first difference
-                        if (!isBetter && locants.SequenceEqual(bestLocants))
-                        {
-                            for (int i = 0; i < nameList.Count; i++)
-                            {
-                                int cmp = string.CompareOrdinal(AlphaKey(nameList[i]), AlphaKey(bestNames![i]));
-                                if (cmp < 0) { isBetter = true; break; }
-                                if (cmp > 0) break;
-                            }
-                        }
-                    }
-
-                    if (isBetter)
-                    {
-                        bestLocants = locants;
-                        bestNames = nameList;
+                        bestPlacement = placement;
                         bestStart = start;
                         bestDirection = dir;
                     }
