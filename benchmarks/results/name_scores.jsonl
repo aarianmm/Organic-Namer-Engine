@@ -1,0 +1,333 @@
+{"id": "4", "reference_name": "1-aminopropan-2-ol", "names": ["1-aminopropan-2-ol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "6", "reference_name": "1-chloro-2,4-dinitrobenzene", "names": ["1-chloro-2,4-dinitrobenzene"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "8", "reference_name": "2,3-dihydroxy-3-methylpentanoic acid", "names": ["2,3-dihydroxy-3-methylpentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "11", "reference_name": "1,2-dichloroethane", "names": ["1,2-dichloroethane"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "13", "reference_name": "1,2,4-trichlorobenzene", "names": ["1,2,4-trichlorobenzene"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "18", "reference_name": "4,5,6-trihydroxy-2,3-dioxohexanoic acid", "names": ["4,5,6-trihydroxy-2,3-dioxohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "19", "reference_name": "2,3-dihydroxybenzoic acid", "names": ["2,3-dihydroxybenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "21", "reference_name": "2-ethyl-2-hydroxy-3-oxobutanoic acid", "names": ["2-ethyl-2-hydroxy-3-oxobutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "22", "reference_name": "2-hydroxy-2-methyl-3-oxobutanoic acid", "names": ["2-hydroxy-2-methyl-3-oxobutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "28", "reference_name": "2-aminohexa-2,4-dienedioic acid", "names": ["2-aminohexa-2,4-diene-1,6-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "29", "reference_name": "2-amino-3-oxopropanoic acid", "names": ["2-amino-3-oxopropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "30", "reference_name": "2-amino-6-oxohexa-2,4-dienoic acid", "names": ["2-amino-6-oxohexa-2,4-dien-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "33", "reference_name": "2-chloroacetaldehyde", "names": ["2-chloroethan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "34", "reference_name": "2-chloroethanol", "names": ["2-chloroethan-1-ol"], "strict_match": false, "normalised_match": true, "rule_applied": "short_chain_suffix_locant_elision"}
+{"id": "37", "reference_name": "4,5,6-trihydroxy-2-oxohexanoic acid", "names": ["4,5,6-trihydroxy-2-oxohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "38", "reference_name": "4-hydroxy-3,3-dimethyl-2-oxobutanoic acid", "names": ["3-(hydroxymethyl)-3-methyl-2-oxobutan-1-oic acid"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "42", "reference_name": "2-hydroxy-6-oxonona-2,4-dienedioic acid", "names": ["2-hydroxy-6-oxonona-2,4-diene-1,9-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "43", "reference_name": "2-hydroxypentanedioic acid", "names": ["2-hydroxypentane-1,5-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "45", "reference_name": "2-hydroxypropanedioic acid", "names": ["2-hydroxypropane-1,3-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "47", "reference_name": "3-methyl-2-oxopentanoic acid", "names": ["3-methyl-2-oxopentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "49", "reference_name": "3-methyl-2-oxobutanoic acid", "names": ["3-methyl-2-oxobutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "50", "reference_name": "3,4,5,6-tetrahydroxy-2-oxohexanoic acid", "names": ["3,4,5,6-tetrahydroxy-2-oxohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "51", "reference_name": "2-oxopentanedioic acid", "names": ["2-oxopentane-1,5-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "58", "reference_name": "2-oxobutanoic acid", "names": ["2-oxobutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "63", "reference_name": "2,4-diaminopentanoic acid", "names": ["2,4-diaminopentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "66", "reference_name": "2,5-dichlorophenol", "names": ["2,5-dichlorophenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "67", "reference_name": "3,4,6-trihydroxy-2,5-dioxohexanoic acid", "names": ["3,4,6-trihydroxy-2,5-dioxohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "69", "reference_name": "2-hydroxy-6-oxohepta-2,4-dienoic acid", "names": ["2-hydroxy-6-oxohepta-2,4-dien-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "70", "reference_name": "4-methyl-2-oxopentanoic acid", "names": ["4-methyl-2-oxopentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "71", "reference_name": "2-oxohexanedioic acid", "names": ["2-oxohexane-1,6-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "72", "reference_name": "3,4-dihydroxybenzoic acid", "names": ["3,4-dihydroxybenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "75", "reference_name": "3-aminopropanal", "names": ["3-aminopropan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "78", "reference_name": "2-amino-3-chloropropanoic acid", "names": ["2-amino-3-chloropropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "86", "reference_name": "2-amino-3-hydroxybenzoic acid", "names": ["2-amino-3-hydroxybenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "87", "reference_name": "3-hydroxy-2-methylpropanoic acid", "names": ["2-(hydroxymethyl)propan-1-oic acid"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "93", "reference_name": "3-oxohexanedioic acid", "names": ["3-oxohexane-1,6-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "95", "reference_name": "2,4,5,6-tetrahydroxy-3-oxohexanoic acid", "names": ["2,4,5,6-tetrahydroxy-3-oxohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "96", "reference_name": "3-oxobutanoic acid", "names": ["3-oxobutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "98", "reference_name": "2-oxo-3-sulfanylpropanoic acid", "names": ["2-oxo-3-sulfanylpropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "101", "reference_name": "3-hydroxybenzaldehyde", "names": ["3-hydroxybenzaldehyde"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "118", "reference_name": "4-aminobutanal", "names": ["4-aminobutan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "119", "reference_name": "4-aminobutanoic acid", "names": ["4-aminobutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "122", "reference_name": "4,6-dioxooct-2-enedioic acid", "names": ["4,6-dioxooct-2-ene-1,8-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "124", "reference_name": "4-hydroxy-2-oxopentanoic acid", "names": ["4-hydroxy-2-oxopentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "126", "reference_name": "4-hydroxybenzaldehyde", "names": ["4-hydroxybenzaldehyde"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "129", "reference_name": "4-methylpentanal", "names": ["4-methylpentan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "135", "reference_name": "4-hydroxybenzoic acid", "names": ["4-hydroxybenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "137", "reference_name": "5-amino-4-oxopentanoic acid", "names": ["5-amino-4-oxopentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "138", "reference_name": "5-aminopentanoic acid", "names": ["5-aminopentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "145", "reference_name": "2,3-dihydroxy-5-oxohexanedioic acid", "names": ["2,3-dihydroxy-5-oxohexane-1,6-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "157", "reference_name": "2,3,4,6-tetrahydroxy-5-oxohexanoic acid", "names": ["2,3,4,6-tetrahydroxy-5-oxohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "173", "reference_name": "8-amino-7-oxononanoic acid", "names": ["8-amino-7-oxononan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "174", "reference_name": "ethane-1,2-diol", "names": ["ethane-1,2-diol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "176", "reference_name": "acetic acid", "names": ["ethan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "177", "reference_name": "acetaldehyde", "names": ["ethan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "178", "reference_name": "acetamide", "names": ["ethan-1-amide"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "179", "reference_name": "3-hydroxybutan-2-one", "names": ["3-hydroxybutan-2-one"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "180", "reference_name": "propan-2-one", "names": ["propan-2-one"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "196", "reference_name": "hexanedioic acid", "names": ["hexane-1,6-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "205", "reference_name": "2-amino-3-hydroxybutanoic acid", "names": ["2-amino-3-hydroxybutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "207", "reference_name": "2-amino-6-oxohexanoic acid", "names": ["2-amino-6-oxohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "215", "reference_name": "1-aminopropan-2-one", "names": ["1-aminopropan-2-one"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "219", "reference_name": "2-amino-3-oxobutanoic acid", "names": ["2-amino-3-oxobutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "227", "reference_name": "2-aminobenzoic acid", "names": ["2-aminobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "239", "reference_name": "3-aminopropanoic acid", "names": ["3-aminopropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "240", "reference_name": "benzaldehyde", "names": ["benzaldehyde"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "241", "reference_name": "benzene", "names": ["benzene"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "243", "reference_name": "benzoic acid", "names": ["benzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "244", "reference_name": "phenylmethanol", "names": ["phenylmethanol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "261", "reference_name": "butanal", "names": ["butan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "262", "reference_name": "butane-2,3-diol", "names": ["butane-2,3-diol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "263", "reference_name": "butan-1-ol", "names": ["butan-1-ol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "264", "reference_name": "butanoic acid", "names": ["butan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "273", "reference_name": "pentane-1,5-diamine", "names": ["pentane-1,5-diamine"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "277", "reference_name": "carbamic acid", "names": ["1-aminomethan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "methane_locant_elision,retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "280", "reference_name": "carbon dioxide", "names": ["methane-1,1-dial"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "284", "reference_name": "formic acid", "names": ["methan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "296", "reference_name": "2-methyl-3-oxopropanoic acid", "names": ["2-methyl-3-oxopropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "297", "reference_name": "methane", "names": ["methane"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "300", "reference_name": "2-chloroacetic acid", "names": ["2-chloroethan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "310", "reference_name": "hexa-2,4-dienedioic acid", "names": ["hexa-2,4-diene-1,6-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "326", "reference_name": "4-propan-2-ylbenzaldehyde", "names": ["4-(1-methylethyl)benzaldehyde"], "strict_match": false, "normalised_match": true, "rule_applied": "branched_alkyl_convention"}
+{"id": "331", "reference_name": "3,5-diaminohexanoic acid", "names": ["3,5-diaminohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "335", "reference_name": "2-methylphenol", "names": ["2-methylphenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "337", "reference_name": "3,4,5-trihydroxypentan-2-one", "names": ["3,4,5-trihydroxypentan-2-one"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "338", "reference_name": "2-hydroxybenzoic acid", "names": ["2-hydroxybenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "342", "reference_name": "3-methylphenol", "names": ["3-methylphenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "354", "reference_name": "2-oxohept-3-enedioic acid", "names": ["2-oxohept-3-ene-1,7-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "356", "reference_name": "octane", "names": ["octane"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "358", "reference_name": "5-amino-3-oxohexanoic acid", "names": ["5-amino-3-oxohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "363", "reference_name": "2-aminoacetaldehyde", "names": ["2-aminoethan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "364", "reference_name": "2,3-diaminopropanoic acid", "names": ["2,3-diaminopropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "370", "reference_name": "3,4,5-trihydroxybenzoic acid", "names": ["3,4,5-trihydroxybenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "371", "reference_name": "but-2-ynedioic acid", "names": ["but-2-yne-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "376", "reference_name": "3-hydroxy-5-oxohexanoic acid", "names": ["3-hydroxy-5-oxohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "379", "reference_name": "octanoic acid", "names": ["octan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "385", "reference_name": "heptanedioic acid", "names": ["heptane-1,7-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "389", "reference_name": "2,5-diaminopentanoic acid", "names": ["2,5-diaminopentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "392", "reference_name": "3,6-diaminohexanoic acid", "names": ["3,6-diaminohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "398", "reference_name": "2-nitropropane", "names": ["2-nitropropane"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "403", "reference_name": "4-aminophenol", "names": ["4-aminophenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "417", "reference_name": "3-chlorohexa-2,4-dienedioic acid", "names": ["3-chlorohexa-2,4-diene-1,6-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "419", "reference_name": "4-oxohex-2-enedioic acid", "names": ["4-oxohex-2-ene-1,6-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "421", "reference_name": "6,8-bis(sulfanyl)octanoic acid", "names": ["6,8-disulfanyloctan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "bis_di_sulfanyl_convention,terminal_group_locant_elision"}
+{"id": "423", "reference_name": "2-amino-4-oxopentanoic acid", "names": ["2-amino-4-oxopentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "424", "reference_name": "2-aminobutanedioic acid", "names": ["2-aminobutane-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "428", "reference_name": "propane-1,3-diamine", "names": ["propane-1,3-diamine"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "441", "reference_name": "3-hydroxybutanoic acid", "names": ["3-hydroxybutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "447", "reference_name": "3-chlorobenzoic acid", "names": ["3-chlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "449", "reference_name": "3,5-dihydroxy-3-methylpentanoic acid", "names": ["3,5-dihydroxy-3-methylpentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "453", "reference_name": "hexane-1,2,3,4,5,6-hexol", "names": ["hexane-1,2,3,4,5,6-hexaol"], "strict_match": false, "normalised_match": true, "rule_applied": "multiplying_prefix_vowel_elision"}
+{"id": "454", "reference_name": "octanal", "names": ["octan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "460", "reference_name": "2-methoxyphenol", "names": ["2-methoxyphenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "469", "reference_name": "2-aminohexanedioic acid", "names": ["2-aminohexane-1,6-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "470", "reference_name": "2,4-diaminobutanoic acid", "names": ["2,4-diaminobutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "487", "reference_name": "2-methylpropanedioic acid", "names": ["2-methylpropane-1,3-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "523", "reference_name": "2,5-dioxopentanoic acid", "names": ["2,5-dioxopentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "524", "reference_name": "2-hydroxy-3-oxobutanedioic acid", "names": ["3-hydroxy-2-oxobutane-1,4-dioic acid", "2-hydroxy-3-oxobutane-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "525", "reference_name": "2-hydroxybutanedioic acid", "names": ["2-hydroxybutane-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "527", "reference_name": "propanal", "names": ["propan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "540", "reference_name": "cyanic acid", "names": ["1-hydroxymethane-1-nitrile"], "strict_match": false, "normalised_match": true, "rule_applied": "methane_locant_elision,retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "541", "reference_name": "4-nitrobenzaldehyde", "names": ["4-nitrobenzaldehyde"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "551", "reference_name": "2-hydroxyhepta-2,4-dienedioic acid", "names": ["2-hydroxyhepta-2,4-diene-1,7-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "553", "reference_name": "4-hydroxy-2-oxoheptanedioic acid", "names": ["4-hydroxy-2-oxoheptane-1,7-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "560", "reference_name": "3,4,6-trihydroxy-5-oxohexanoic acid", "names": ["3,4,6-trihydroxy-5-oxohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "564", "reference_name": "6-aminohexanoic acid", "names": ["6-aminohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "594", "reference_name": "2-amino-3-sulfanylpropanoic acid", "names": ["2-amino-3-sulfanylpropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "599", "reference_name": "2-hydroxy-4-oxopentanedioic acid", "names": ["2-hydroxy-4-oxopentane-1,5-dioic acid", "4-hydroxy-2-oxopentane-1,5-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "602", "reference_name": "2-aminopropanoic acid", "names": ["2-aminopropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "604", "reference_name": "2,3,4,5,6-pentahydroxyhexanoic acid", "names": ["2,3,4,5,6-pentahydroxyhexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "607", "reference_name": "2,3,4,5-tetrahydroxyhexanedioic acid", "names": ["2,3,4,5-tetrahydroxyhexane-1,6-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "611", "reference_name": "2-aminopentanedioic acid", "names": ["2-aminopentane-1,5-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "612", "reference_name": "2-hydroxypropanoic acid", "names": ["2-hydroxypropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "617", "reference_name": "2-amino-3-hydroxypropanoic acid", "names": ["2-amino-3-hydroxypropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "619", "reference_name": "1,3,4,5-tetrahydroxypentan-2-one", "names": ["1,3,4,5-tetrahydroxypentan-2-one"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "626", "reference_name": "3,4,5,6-tetrahydroxyhexanoic acid", "names": ["3,4,5,6-tetrahydroxyhexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "627", "reference_name": "4,5,6-trihydroxy-3-oxohexanoic acid", "names": ["4,5,6-trihydroxy-3-oxohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "650", "reference_name": "butane-2,3-dione", "names": ["butane-2,3-dione"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "652", "reference_name": "7,8-diaminononanoic acid", "names": ["7,8-diaminononan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "663", "reference_name": "6,8-bis(sulfanyl)octanamide", "names": ["6,8-disulfanyloctan-1-amide"], "strict_match": false, "normalised_match": true, "rule_applied": "bis_di_sulfanyl_convention,terminal_group_locant_elision"}
+{"id": "670", "reference_name": "1,3-dihydroxypropan-2-one", "names": ["1,3-dihydroxypropan-2-one"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "674", "reference_name": "N-methylmethanamine", "names": ["N-methylmethanamine"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "677", "reference_name": "2,3-dihydroxy-3-methylbutanoic acid", "names": ["2,3-dihydroxy-3-methylbutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "700", "reference_name": "2-aminoethanol", "names": ["2-aminoethan-1-ol"], "strict_match": false, "normalised_match": true, "rule_applied": "short_chain_suffix_locant_elision"}
+{"id": "702", "reference_name": "ethanol", "names": ["ethan-1-ol"], "strict_match": false, "normalised_match": true, "rule_applied": "short_chain_suffix_locant_elision"}
+{"id": "712", "reference_name": "formaldehyde", "names": ["methan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "713", "reference_name": "formamide", "names": ["methan-1-amide"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "723", "reference_name": "but-2-enedioic acid", "names": ["but-2-ene-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "727", "reference_name": "1,2,3,4,5,6-hexachlorocyclohexane", "names": ["1,2,3,4,5,6-hexachlorocyclohexane"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "742", "reference_name": "4-amino-5-oxopentanoic acid", "names": ["4-amino-5-oxopentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "743", "reference_name": "pentanedioic acid", "names": ["pentane-1,5-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "750", "reference_name": "2-aminoacetic acid", "names": ["2-aminoethan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "751", "reference_name": "2,3-dihydroxypropanal", "names": ["2,3-dihydroxypropan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "752", "reference_name": "2,3-dihydroxypropanoic acid", "names": ["2,3-dihydroxypropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "753", "reference_name": "propane-1,2,3-triol", "names": ["propane-1,2,3-triol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "756", "reference_name": "2-hydroxyacetaldehyde", "names": ["2-hydroxyethan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "757", "reference_name": "2-hydroxyacetic acid", "names": ["2-hydroxyethan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "760", "reference_name": "oxaldehydic acid", "names": ["2-oxoethan-1-oic acid"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "767", "reference_name": "carbonic acid", "names": ["1-hydroxymethan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "methane_locant_elision,retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "768", "reference_name": "formonitrile", "names": ["methane-1-nitrile"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "778", "reference_name": "2-amino-4-sulfanylbutanoic acid", "names": ["2-amino-4-sulfanylbutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "779", "reference_name": "2-amino-4-hydroxybutanoic acid", "names": ["2-amino-4-hydroxybutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "781", "reference_name": "thiocyanic acid", "names": ["1-sulfanylmethane-1-nitrile"], "strict_match": false, "normalised_match": true, "rule_applied": "methane_locant_elision,retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "791", "reference_name": "2-amino-3-methylpentanoic acid", "names": ["2-amino-3-methylpentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "796", "reference_name": "2-iminobutanedioic acid", "names": ["2-iminobutane-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "817", "reference_name": "4,5,6,7,8-pentahydroxy-2-oxooctanoic acid", "names": ["4,5,6,7,8-pentahydroxy-2-oxooctan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "824", "reference_name": "2-aminopentanoic acid", "names": ["2-aminopentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "827", "reference_name": "pentane-1,2,3,4,5-pentol", "names": ["pentane-1,2,3,4,5-pentaol"], "strict_match": false, "normalised_match": true, "rule_applied": "multiplying_prefix_vowel_elision"}
+{"id": "829", "reference_name": "2-amino-4-oxobutanoic acid", "names": ["2-amino-4-oxobutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "839", "reference_name": "2-amino-4-hydroxypentanedioic acid", "names": ["2-amino-4-hydroxypentane-1,5-dioic acid", "4-amino-2-hydroxypentane-1,5-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "841", "reference_name": "1,3,4,5-tetrahydroxyhexan-2-one", "names": ["1,3,4,5-tetrahydroxyhexan-2-one"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "844", "reference_name": "2-amino-5-oxopentanoic acid", "names": ["2-amino-5-oxopentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "848", "reference_name": "2,4-dihydroxy-3,3-dimethylbutanoic acid", "names": ["2-hydroxy-3-(hydroxymethyl)-3-methylbutan-1-oic acid"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "852", "reference_name": "2-amino-3-methylbutanedioic acid", "names": ["2-amino-3-methylbutane-1,4-dioic acid", "3-amino-2-methylbutane-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "854", "reference_name": "2,3,4,5-tetrahydroxypentanal", "names": ["2,3,4,5-tetrahydroxypentan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "855", "reference_name": "2-hydroxypropanal", "names": ["2-hydroxypropan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "857", "reference_name": "2-amino-4-methylpentanoic acid", "names": ["2-amino-4-methylpentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "865", "reference_name": "2,6-diaminoheptanedioic acid", "names": ["2,6-diaminoheptane-1,7-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "866", "reference_name": "2,6-diaminohexanoic acid", "names": ["2,6-diaminohexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "867", "reference_name": "propanedioic acid", "names": ["propane-1,3-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "868", "reference_name": "3-oxopropanoic acid", "names": ["3-oxopropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "874", "reference_name": "2-methylbut-2-enedioic acid", "names": ["2-methylbut-2-ene-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "875", "reference_name": "2,3-dihydroxybutanedioic acid", "names": ["2,3-dihydroxybutane-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "878", "reference_name": "methanethiol", "names": ["methane-1-thiol"], "strict_match": false, "normalised_match": true, "rule_applied": "methane_locant_elision"}
+{"id": "880", "reference_name": "2-oxopropanal", "names": ["2-oxopropan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "887", "reference_name": "methanol", "names": ["methan-1-ol"], "strict_match": false, "normalised_match": true, "rule_applied": "short_chain_suffix_locant_elision"}
+{"id": "892", "reference_name": "cyclohexane-1,2,3,4,5,6-hexol", "names": ["1,2,3,4,5,6-hexahydroxycyclohexane"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "904", "reference_name": "N-phenylacetamide", "names": ["N-phenylethanamide"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias"}
+{"id": "949", "reference_name": "N,N-dimethylaniline", "names": ["N,N-dimethylphenylamine"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias"}
+{"id": "957", "reference_name": "octan-1-ol", "names": ["octan-1-ol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "964", "reference_name": "3-hydroxy-2-oxopropanoic acid", "names": ["3-hydroxy-2-oxopropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "970", "reference_name": "2-oxobutanedioic acid", "names": ["2-oxobutane-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "971", "reference_name": "oxalic acid", "names": ["ethane-1,2-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "976", "reference_name": "2-oxopent-4-enoic acid", "names": ["2-oxopent-4-en-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "978", "reference_name": "4-aminobenzoic acid", "names": ["4-aminobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "980", "reference_name": "4-nitrophenol", "names": ["4-nitrophenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "992", "reference_name": "2,3,4,5,6-pentachlorophenol", "names": ["2,3,4,5,6-pentachlorophenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "996", "reference_name": "phenol", "names": ["phenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1029", "reference_name": "2,6-diamino-5-hydroxyhexanoic acid", "names": ["2,6-diamino-5-hydroxyhexan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1030", "reference_name": "propane-1,2-diol", "names": ["propane-1,2-diol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1031", "reference_name": "propan-1-ol", "names": ["propan-1-ol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1032", "reference_name": "propanoic acid", "names": ["propan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1045", "reference_name": "butane-1,4-diamine", "names": ["butane-1,4-diamine"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1060", "reference_name": "2-oxopropanoic acid", "names": ["2-oxopropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1081", "reference_name": "2-hydroxy-2-methylbutanedioic acid", "names": ["2-hydroxy-2-methylbutane-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1101", "reference_name": "1,3,4,5,6-pentahydroxyhexan-2-one", "names": ["1,3,4,5,6-pentahydroxyhexan-2-one"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1110", "reference_name": "butanedioic acid", "names": ["butane-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1112", "reference_name": "4-oxobutanoic acid", "names": ["4-oxobutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1122", "reference_name": "2-hydroxy-3-oxopropanoic acid", "names": ["2-hydroxy-3-oxopropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1133", "reference_name": "2-sulfanylacetic acid", "names": ["2-sulfanylethan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "1140", "reference_name": "toluene", "names": ["methylbenzene"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias"}
+{"id": "1176", "reference_name": "urea", "names": ["1-aminomethan-1-amide"], "strict_match": false, "normalised_match": true, "rule_applied": "methane_locant_elision,retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "1182", "reference_name": "2-amino-3-methylbutanoic acid", "names": ["2-amino-3-methylbutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1183", "reference_name": "4-hydroxy-3-methoxybenzaldehyde", "names": ["4-hydroxy-3-methoxybenzaldehyde"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1254", "reference_name": "5-methyl-2-propan-2-ylcyclohexan-1-ol", "names": ["2-hydroxy-4-methyl-1-(1-methylethyl)cyclohexane"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "1317", "reference_name": "decane-1,10-diamine", "names": ["decane-1,10-diamine"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1483", "reference_name": "2,4,6-tribromophenol", "names": ["2,4,6-tribromophenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1491", "reference_name": "2,4-dihydroxybenzoic acid", "names": ["2,4-dihydroxybenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1493", "reference_name": "2,4-dinitrophenol", "names": ["2,4-dinitrophenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1531", "reference_name": "2-amino-2-methylpropane-1,3-diol", "names": ["2-amino-2-(hydroxymethyl)propan-1-ol"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "1552", "reference_name": "6-bromo-3-(bromomethyl)-3,7-dichloro-7-methyloct-1-ene", "names": ["6-bromo-3-(bromomethyl)-3,7-dichloro-7-methyloct-1-ene"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1567", "reference_name": "2-sulfanylethanol", "names": ["2-sulfanylethan-1-ol"], "strict_match": false, "normalised_match": true, "rule_applied": "short_chain_suffix_locant_elision"}
+{"id": "1645", "reference_name": "3-aminobenzamide", "names": ["3-aminobenzamide"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1647", "reference_name": "3-aminopropanenitrile", "names": ["3-aminopropane-1-nitrile"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1657", "reference_name": "3-fluoropropane-1,2-diol", "names": ["3-fluoropropane-1,2-diol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1662", "reference_name": "3-hydroxy-3-methylpentanedioic acid", "names": ["3-hydroxy-3-methylpentane-1,5-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1678", "reference_name": "3-nitropropanoic acid", "names": ["3-nitropropan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1693", "reference_name": "4-hydroxynon-2-enal", "names": ["4-hydroxynon-2-en-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1698", "reference_name": "4,7-dioxodecanedioic acid", "names": ["4,7-dioxodecane-1,10-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1732", "reference_name": "4-chloro-3-methylphenol", "names": ["4-chloro-3-methylphenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1737", "reference_name": "2,3,5-trihydroxyhexanedioic acid", "names": ["2,3,5-trihydroxyhexane-1,6-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1752", "reference_name": "4-nonylphenol", "names": ["4-nonylphenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "1755", "reference_name": "4-oxodecanedioic acid", "names": ["4-oxodecane-1,10-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1825", "reference_name": "5-hydroxydecanoic acid", "names": ["5-hydroxydecan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "1841", "reference_name": "2,3,4,6-tetrahydroxy-5-sulfanylhexanal", "names": ["2,3,4,6-tetrahydroxy-5-sulfanylhexan-1-al"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "2075", "reference_name": "2-chloro-4-nitrobenzamide", "names": ["2-chloro-4-nitrobenzamide"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "2109", "reference_name": "2-amino-2-methylbutanedioic acid", "names": ["2-amino-2-methylbutane-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "2113", "reference_name": "2,5-diamino-2-methylpentanoic acid", "names": ["2,5-diamino-2-methylpentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "2149", "reference_name": "4-amino-3-hydroxybutanoic acid", "names": ["4-amino-3-hydroxybutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "2266", "reference_name": "nonanedioic acid", "names": ["nonane-1,9-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "2331", "reference_name": "benzamide", "names": ["benzamide"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "2337", "reference_name": "ethyl 4-aminobenzoate", "names": ["ethyl 4-aminobenzoate"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "2450", "reference_name": "2-bromo-2-nitropropane-1,3-diol", "names": ["2-bromo-2-nitropropane-1,3-diol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "2482", "reference_name": "butyl 4-aminobenzoate", "names": ["butyl 4-aminobenzoate"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "2707", "reference_name": "2,2,2-trichloroethane-1,1-diol", "names": ["2,2,2-trichloroethane-1,1-diol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "2723", "reference_name": "4-chloro-3,5-dimethylphenol", "names": ["4-chloro-3,5-dimethylphenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "2766", "reference_name": "4-aminobut-2-enoic acid", "names": ["4-aminobut-2-en-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "2859", "reference_name": "7-oxabicyclo[4.1.0]heptane-2,3,4,5-tetrol", "names": ["1,2,3,4,5,6-hexahydroxycyclohexane"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "2879", "reference_name": "4-methylphenol", "names": ["4-methylphenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "2899", "reference_name": "cycloheptanamine", "names": ["aminocycloheptane"], "strict_match": false, "normalised_match": true, "rule_applied": "amine_prefix_suffix_convention"}
+{"id": "2903", "reference_name": "cyclooctanamine", "names": ["aminocyclooctane"], "strict_match": false, "normalised_match": true, "rule_applied": "amine_prefix_suffix_convention"}
+{"id": "2906", "reference_name": "cyclopentanamine", "names": ["aminocyclopentane"], "strict_match": false, "normalised_match": true, "rule_applied": "amine_prefix_suffix_convention"}
+{"id": "2969", "reference_name": "decanoic acid", "names": ["decan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "3009", "reference_name": "2,5-diamino-2-(difluoromethyl)pentanoic acid", "names": ["2-amino-2-(aminopropyl)-3,3-difluoropropan-1-oic acid"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "3024", "reference_name": "dibromomethane", "names": ["1,1-dibromomethane"], "strict_match": false, "normalised_match": true, "rule_applied": "methane_locant_elision"}
+{"id": "3030", "reference_name": "3,6-dichloro-2-methoxybenzoic acid", "names": ["3,6-dichloro-2-methoxybenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3031", "reference_name": "2,6-dichlorobenzonitrile", "names": ["2,6-dichlorobenzonitrile"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3080", "reference_name": "2,3-bis(sulfanyl)propan-1-ol", "names": ["2,3-disulfanylpropan-1-ol"], "strict_match": false, "normalised_match": true, "rule_applied": "bis_di_sulfanyl_convention"}
+{"id": "3092", "reference_name": "2-methyl-3,5-dinitrobenzamide", "names": ["2-methyl-3,5-dinitrobenzamide"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3094", "reference_name": "N-octyloctan-1-amine", "names": ["N-octyloctanamine"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "3121", "reference_name": "2-propylpentanoic acid", "names": ["2-propylpentan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "3281", "reference_name": "1-chloro-3-ethylpent-1-en-4-yn-3-ol", "names": ["1-chloro-3-ethylpent-1-en-4-yn-3-ol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3282", "reference_name": "2-ethoxybenzamide", "names": ["2-ethoxybenzamide"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3283", "reference_name": "ethoxyethane", "names": ["ethoxyethane"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3301", "reference_name": "ethane-1,2-diamine", "names": ["ethane-1,2-diamine"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3316", "reference_name": "2-hexoxybenzamide", "names": ["2-hexoxybenzamide"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3429", "reference_name": "hexane-1,2,3,4,5-pentol", "names": ["hexane-1,2,3,4,5-pentaol"], "strict_match": false, "normalised_match": true, "rule_applied": "multiplying_prefix_vowel_elision"}
+{"id": "3452", "reference_name": "4-aminohex-5-ynoic acid", "names": ["4-aminohex-5-yn-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "3469", "reference_name": "2,5-dihydroxybenzoic acid", "names": ["2,5-dihydroxybenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3485", "reference_name": "pentanedial", "names": ["pentane-1,5-dial"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "3520", "reference_name": "guanidine", "names": ["1-iminomethane-1,1-diamine"], "strict_match": false, "normalised_match": true, "rule_applied": "methane_locant_elision,retained_trivial_name_alias"}
+{"id": "3558", "reference_name": "6-bromo-3-(bromomethyl)-2,3,7-trichloro-7-methyloct-1-ene", "names": ["6-bromo-3-(bromomethyl)-2,3,7-trichloro-7-methyloct-1-ene"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3562", "reference_name": "2-bromo-2-chloro-1,1,1-trifluoroethane", "names": ["2-bromo-2-chloro-1,1,1-trifluoroethane"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3590", "reference_name": "6-amino-2-methylheptan-2-ol", "names": ["6-amino-2-methylheptan-2-ol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3727", "reference_name": "2-iodoacetamide", "names": ["2-iodoethan-1-amide"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "3766", "reference_name": "7-bromo-3-(bromomethyl)-2,3,6-trichloro-7-methyloct-1-ene", "names": ["7-bromo-3-(bromomethyl)-2,3,6-trichloro-7-methyloct-1-ene"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3776", "reference_name": "propan-2-ol", "names": ["propan-2-ol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "3861", "reference_name": "2-amino-4-methylpentane-1-thiol", "names": ["2-amino-4-methylpentane-1-thiol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "4075", "reference_name": "5-amino-2-hydroxybenzoic acid", "names": ["5-amino-2-hydroxybenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "4093", "reference_name": "2-methylprop-2-enoic acid", "names": ["2-methylprop-2-en-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "4133", "reference_name": "methyl 2-hydroxybenzoate", "names": ["methyl 2-hydroxybenzoate"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "4208", "reference_name": "1,6-dibromohexane-2,3,4,5-tetrol", "names": ["1,6-dibromohexane-2,3,4,5-tetraol"], "strict_match": false, "normalised_match": true, "rule_applied": "multiplying_prefix_vowel_elision"}
+{"id": "4458", "reference_name": "3,7-dimethylocta-2,6-dien-1-ol", "names": ["3,7-dimethylocta-2,6-dien-1-ol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "4511", "reference_name": "3,5-dinitrobenzamide", "names": ["3,5-dinitrobenzamide"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "4554", "reference_name": "3-(bromomethyl)-2,3,6-trichloro-7-methylocta-1,6-diene", "names": ["3-(bromomethyl)-2,3,6-trichloro-7-methylocta-1,6-diene"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "4555", "reference_name": "6-bromo-3-(bromomethyl)-2,3-dichloro-7-methylocta-1,6-diene", "names": ["6-bromo-3-(bromomethyl)-2,3-dichloro-7-methylocta-1,6-diene"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "4610", "reference_name": "cyclohexane-1,2-diamine", "names": ["1,2-diaminocyclohexane"], "strict_match": false, "normalised_match": true, "rule_applied": "amine_prefix_suffix_convention"}
+{"id": "4649", "reference_name": "4-amino-2-hydroxybenzoic acid", "names": ["4-amino-2-hydroxybenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "4684", "reference_name": "4-chlorophenol", "names": ["4-chlorophenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "4685", "reference_name": "1,4-dichlorobenzene", "names": ["1,4-dichlorobenzene"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "4727", "reference_name": "2-amino-3-methyl-3-sulfanylbutanoic acid", "names": ["2-amino-3-methyl-3-sulfanylbutan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "4943", "reference_name": "2,6-di(propan-2-yl)phenol", "names": ["2,6-di(1-methylethyl)phenol"], "strict_match": false, "normalised_match": true, "rule_applied": "branched_alkyl_convention"}
+{"id": "4947", "reference_name": "propyl 3,4,5-trihydroxybenzoate", "names": ["propyl 3,4,5-trihydroxybenzoate"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5126", "reference_name": "2-aminopropan-1-ol", "names": ["2-aminopropan-1-ol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5128", "reference_name": "1-iodo-2-methylbenzene", "names": ["1-iodo-2-methylbenzene"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5147", "reference_name": "2-hydroxybenzamide", "names": ["2-hydroxybenzamide"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5192", "reference_name": "decanedioic acid", "names": ["decane-1,10-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "5237", "reference_name": "2-fluoroacetic acid", "names": ["2-fluoroethan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "5240", "reference_name": "2-iodoacetic acid", "names": ["2-iodoethan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "retained_trivial_name_alias,terminal_group_locant_elision"}
+{"id": "5251", "reference_name": "hexa-2,4-dienoic acid", "names": ["hexa-2,4-dien-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "5312", "reference_name": "4,6-dioxoheptanoic acid", "names": ["4,6-dioxoheptan-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "5365", "reference_name": "2-amino-4-methylpentanedioic acid", "names": ["2-amino-4-methylpentane-1,5-dioic acid", "4-amino-2-methylpentane-1,5-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "5425", "reference_name": "2-amino-3-hydroxybutanedioic acid", "names": ["3-amino-2-hydroxybutane-1,4-dioic acid", "2-amino-3-hydroxybutane-1,4-dioic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "5443", "reference_name": "2-sulfanylbenzoic acid", "names": ["2-sulfanylbenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5558", "reference_name": "bromoform", "names": ["1,1,1-tribromomethane"], "strict_match": false, "normalised_match": true, "rule_applied": "methane_locant_elision,retained_trivial_name_alias"}
+{"id": "5603", "reference_name": "heptan-2-amine", "names": ["heptan-2-amine"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5665", "reference_name": "4-aminohex-5-enoic acid", "names": ["4-aminohex-5-en-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
+{"id": "5758", "reference_name": "2,6-dichlorobenzoic acid", "names": ["2,6-dichlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5759", "reference_name": "2,3,6-trichlorobenzoic acid", "names": ["2,3,6-trichlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5762", "reference_name": "2,3,5,6-tetrachlorobenzoic acid", "names": ["2,3,5,6-tetrachlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5764", "reference_name": "2,4,6-trichlorobenzoic acid", "names": ["2,4,6-trichlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5765", "reference_name": "2,3-dichlorobenzoic acid", "names": ["2,3-dichlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5780", "reference_name": "(2R,3R,4R,5S)-hexane-1,2,3,4,5,6-hexol", "names": ["hexane-1,2,3,4,5,6-hexaol"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "5782", "reference_name": "2,3,4,5-tetrachlorobenzoic acid", "names": ["2,3,4,5-tetrachlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5783", "reference_name": "2,3,4-trichlorobenzoic acid", "names": ["2,3,4-trichlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5784", "reference_name": "2,5-dichlorobenzoic acid", "names": ["2,5-dichlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5786", "reference_name": "2,4,5-trichlorobenzoic acid", "names": ["2,4,5-trichlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5787", "reference_name": "2,4-dichlorobenzoic acid", "names": ["2,4-dichlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5788", "reference_name": "2-hydroxy-4-methylbenzoic acid", "names": ["2-hydroxy-4-methylbenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5801", "reference_name": "2-aminophenol", "names": ["2-aminophenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5811", "reference_name": "3,5-dichlorobenzoic acid", "names": ["3,5-dichlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5812", "reference_name": "3,4,5-trichlorobenzoic acid", "names": ["3,4,5-trichlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5817", "reference_name": "3,4-dichlorobenzoic acid", "names": ["3,4-dichlorobenzoic acid"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5851", "reference_name": "(3R)-2,3-dihydroxybutanedioic acid", "names": ["2,3-dihydroxybutane-1,4-dioic acid"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "5852", "reference_name": "(2S)-2-amino-3-methyl-3-sulfanylbutanoic acid", "names": ["2-amino-3-methyl-3-sulfanylbutan-1-oic acid"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "5862", "reference_name": "(2R)-2-amino-3-sulfanylpropanoic acid", "names": ["2-amino-3-sulfanylpropan-1-oic acid"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "5943", "reference_name": "tetrachloromethane", "names": ["1,1,1,1-tetrachloromethane"], "strict_match": false, "normalised_match": true, "rule_applied": "methane_locant_elision"}
+{"id": "5950", "reference_name": "(2S)-2-aminopropanoic acid", "names": ["2-aminopropan-1-oic acid"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "5951", "reference_name": "(2S)-2-amino-3-hydroxypropanoic acid", "names": ["2-amino-3-hydroxypropan-1-oic acid"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "5960", "reference_name": "(2S)-2-aminobutanedioic acid", "names": ["2-aminobutane-1,4-dioic acid"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "5962", "reference_name": "(2S)-2,6-diaminohexanoic acid", "names": ["2,6-diaminohexan-1-oic acid"], "strict_match": false, "normalised_match": false, "rule_applied": null}
+{"id": "5977", "reference_name": "1,1,1-trichloro-2-methylpropan-2-ol", "names": ["1,1,1-trichloro-2-methylpropan-2-ol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
+{"id": "5984", "reference_name": "(3S,4R,5R)-1,3,4,5,6-pentahydroxyhexan-2-one", "names": ["1,3,4,5,6-pentahydroxyhexan-2-one"], "strict_match": false, "normalised_match": false, "rule_applied": null}

@@ -1,0 +1,13 @@
+tools/.venv/
+tools/__pycache__/
+
+# Generated corpora and bulk measurement outputs. All reproducible from the
+# commands in README.md, and too large to be worth versioning (~115 MB).
+# The small summary outputs below them are kept.
+data/generated_corpus.jsonl
+data/pubchem_graphs.jsonl
+data/pubchem_named_in.jsonl
+data/pubchem_raw.jsonl
+results/generated_named.jsonl
+results/generated_roundtrip.jsonl
+results/pubchem_named.jsonl

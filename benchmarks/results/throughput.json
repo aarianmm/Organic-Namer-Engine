@@ -1,0 +1,41 @@
+{
+  "moleculeCount": 50000,
+  "invalidInputCount": 0,
+  "reps": 10,
+  "warmup": 3,
+  "totalWallSeconds": 40.4064624,
+  "throughput": {
+    "moleculesPerSecMean": 12374.837876157468,
+    "moleculesPerSecStdDev": 88.60425315916655,
+    "perRepMoleculesPerSec": [
+      12344.217517950654,
+      12379.182582272231,
+      12409.531721604864,
+      12142.594273037694,
+      12405.736561454856,
+      12346.960962243116,
+      12415.021968008921,
+      12450.057217972964,
+      12427.430949030459,
+      12427.645007998928
+    ]
+  },
+  "latencyMicros": {
+    "mean": 80.66249339999072,
+    "p50": 23.5,
+    "p90": 179,
+    "p99": 928.7010000000009,
+    "p999": 2453.5020999999774,
+    "max": 13920
+  },
+  "outcomes": {
+    "named": 49988,
+    "rejected": 12
+  },
+  "machine": {
+    "osDescription": "macOS 15.7.4",
+    "processArchitecture": "Arm64",
+    "processorCount": 8,
+    "frameworkDescription": ".NET 10.0.9"
+  }
+}
