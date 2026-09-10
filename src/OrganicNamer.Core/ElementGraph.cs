@@ -341,6 +341,19 @@
             List<int> sideB = CollectReachable(carbonNeighbours[1], blocked);
             return (sideA, sideB);
         }
+        // True when removing the bridge atom leaves its two attachment carbons still
+        // mutually reachable — i.e. the bridge closes a ring rather than joining two
+        // separate fragments. Same test as the guard inside SplitAtBridgingAtom, hoisted
+        // so the routing decision in IUPAC can consult it before choosing a lane.
+        public bool BridgeClosesARing(int bridgeIndex)
+        {
+            int[] carbonNeighbours = AdjacentAtoms(bridgeIndex)
+                .Where(n => atoms[n].Name == "Carbon").ToArray();
+            if (carbonNeighbours.Length != 2)
+                return false;                     // other guards own the non-2-carbon shapes
+            var blocked = new HashSet<int> { bridgeIndex };
+            return CollectReachable(carbonNeighbours[0], blocked).Contains(carbonNeighbours[1]);
+        }
         // Sibling of SplitAtBridgingAtom for tertiary N-bridges (3 carbon neighbours).
         // The 2-way original stays untouched. Same ring-through-heteroatom guard.
         public List<List<int>> SplitAtBridgingAtomMultiway(int bridgeIndex)
