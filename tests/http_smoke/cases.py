@@ -324,7 +324,9 @@ def _1_phenylethanol():               # OH on a NON-tip substituent carbon
 
 CASES["1_phenylethanol_should_reject"] = reject(payload(_1_phenylethanol()))
 
-def _cyanomethylbenzene():            # carbon-subsuming tip (Q3 gate)
+def _cyanomethylbenzene():            # carbon-subsuming tip (Q3 gate); now also
+                                       # backed by the Stage 2a non-principal-group
+                                       # refusal (nitrile isn't the principal group here)
     a = benzene_ring("A")
     c = add_atom(a, "C")
     bond(a, 0, c)
@@ -1454,7 +1456,9 @@ def _ethyl_4_methylbenzoate():
 CASES["ethyl_4_methylbenzoate"] = exact(payload(_ethyl_4_methylbenzoate()), "ethyl 4-methylbenzoate")
 
 # ── Phase F negatives ──
-def _methyl_4_formylbenzoate():         # -CHO substituent: Q4 tip-group throw
+def _methyl_4_formylbenzoate():         # -CHO substituent: Q4 tip-group throw; now
+                                         # also backed by the Stage 2a non-principal-
+                                         # group refusal (the ester is the principal group)
     a = benzene_ring("A")
     methyl_c = add_atom(a, "C")
     ester_bridge(a, 0, methyl_c)
@@ -1535,3 +1539,135 @@ CASES["overvalent_carbon"] = no_crash({
     ],
     "specificationSet": "AllGroups",
 })
+
+# ── Carbon-subsuming prefixes: oxo rename + non-principal refusal ──
+# Stage 1: a carbonyl carbon ON the main chain now always takes the prefix
+# "oxo", never "formyl". Stage 2a: a COOH/COCl/CONH2/C#N group on the main
+# chain that is NOT the principal characteristic group is refused outright,
+# since its carbon doesn't belong on the parent chain and renaming can't fix it.
+
+def _oxopropanoic_acid():               # OHC-CH2-COOH: Stage 1, on-chain formyl->oxo
+    a = new_atoms()
+    c3 = add_atom(a, "C")                # CHO carbon (C3)
+    attach_atom(a, c3, "O", order=2)
+    c2 = add_atom(a, "C")
+    bond(a, c3, c2)
+    attach_carboxyl(a, c2)               # COOH carbon (C1, principal group)
+    return a
+
+CASES["3_oxopropanoic_acid"] = exact(payload(_oxopropanoic_acid()), "3-oxopropan-1-oic acid")
+
+def _amino_oxopropanoic_acid():         # HOOC-CH(NH2)-CHO
+    a = new_atoms()
+    c_alpha = add_atom(a, "C")
+    attach_atom(a, c_alpha, "N")
+    attach_acyl(a, c_alpha)              # -CHO (becomes on-chain C3, Stage 1 oxo)
+    attach_carboxyl(a, c_alpha)          # -COOH (C1, principal group)
+    return a
+
+CASES["2_amino_3_oxopropanoic_acid"] = exact(
+    payload(_amino_oxopropanoic_acid()), "2-amino-3-oxopropan-1-oic acid")
+
+def _oxobutanal():                      # CH3-CO-CH2-CHO
+    a = new_atoms()
+    c1 = add_atom(a, "C")                # CHO carbon (C1, principal group)
+    attach_atom(a, c1, "O", order=2)
+    c2 = add_atom(a, "C")
+    bond(a, c1, c2)
+    c3 = add_atom(a, "C")                # ketone carbon (C3)
+    bond(a, c2, c3)
+    attach_atom(a, c3, "O", order=2)
+    c4 = add_atom(a, "C")
+    bond(a, c3, c4)
+    return a
+
+CASES["3_oxobutanal"] = exact(payload(_oxobutanal()), "3-oxobutan-1-al")
+
+def _oxopentanedial():                  # OHC-CH2-CO-CH2-CHO
+    a = new_atoms()
+    c1 = add_atom(a, "C")
+    attach_atom(a, c1, "O", order=2)
+    c2 = add_atom(a, "C")
+    bond(a, c1, c2)
+    c3 = add_atom(a, "C")
+    bond(a, c2, c3)
+    attach_atom(a, c3, "O", order=2)
+    c4 = add_atom(a, "C")
+    bond(a, c3, c4)
+    c5 = add_atom(a, "C")
+    bond(a, c4, c5)
+    attach_atom(a, c5, "O", order=2)
+    return a
+
+CASES["3_oxopentanedial"] = exact(payload(_oxopentanedial()), "3-oxopentane-1,5-dial")
+
+def _cyanoacetic_acid():                # N#C-CH2-COOH: nitrile non-principal (acid wins)
+    a = new_atoms()
+    c2 = add_atom(a, "C")
+    attach_nitrile(a, c2)
+    attach_carboxyl(a, c2)
+    return a
+
+CASES["cyanoacetic_acid_should_reject"] = reject(payload(_cyanoacetic_acid()))
+
+def _nitrile_and_acyl_chloride():       # CH3CH2CH(CH2C#N)CH2C(=O)Cl
+    a = new_atoms()
+    c1 = add_atom(a, "C")
+    c2 = add_atom(a, "C")
+    bond(a, c1, c2)
+    c3 = add_atom(a, "C")
+    bond(a, c2, c3)                     # branch point
+    b1 = add_atom(a, "C")
+    bond(a, c3, b1)
+    attach_nitrile(a, b1)               # branch: -CH2-C#N
+    d1 = add_atom(a, "C")
+    bond(a, c3, d1)
+    attach_acyl(a, d1, terminal="Cl")   # continuation: -CH2-C(=O)Cl
+    return a
+
+CASES["nitrile_and_acyl_chloride_should_reject"] = reject(
+    payload(_nitrile_and_acyl_chloride()))
+
+def _amide_and_acid():                  # H2N-CO-CH2-CH2-CO-COOH
+    a = new_atoms()
+    c1 = add_atom(a, "C")               # amide carbon
+    attach_atom(a, c1, "O", order=2)
+    attach_atom(a, c1, "N")
+    c2 = add_atom(a, "C")
+    bond(a, c1, c2)
+    c3 = add_atom(a, "C")
+    bond(a, c2, c3)
+    c4 = add_atom(a, "C")               # ketone carbon
+    bond(a, c3, c4)
+    attach_atom(a, c4, "O", order=2)
+    c5 = add_atom(a, "C")               # COOH carbon (principal group)
+    bond(a, c4, c5)
+    attach_atom(a, c5, "O", order=2)
+    attach_atom(a, c5, "O")
+    return a
+
+CASES["amide_and_acid_should_reject"] = reject(payload(_amide_and_acid()))
+
+# Regression guards: simple on-chain carbonyls untouched by the fix.
+def _butanal():
+    a = new_atoms()
+    c0 = add_atom(a, "C")
+    chain = attach_chain(a, c0, 2)
+    attach_acyl(a, chain[-1])
+    return a
+
+CASES["butan_1_al_regression"] = exact(payload(_butanal()), "butan-1-al")
+
+def _butan_2_one():
+    a = new_atoms()
+    c1 = add_atom(a, "C")
+    c2 = add_atom(a, "C")
+    bond(a, c1, c2)
+    attach_atom(a, c2, "O", order=2)
+    c3 = add_atom(a, "C")
+    bond(a, c2, c3)
+    c4 = add_atom(a, "C")
+    bond(a, c3, c4)
+    return a
+
+CASES["butan_2_one_regression"] = exact(payload(_butan_2_one()), "butan-2-one")

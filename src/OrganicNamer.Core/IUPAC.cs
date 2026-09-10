@@ -17,6 +17,16 @@ namespace OrganicNamer.Core
             public Dictionary<string, ((string prefix, string suffix, int priority) middle, (string prefix, string suffix, int priority) end)> endDependentPrefixOrSuffix;
         }
         private readonly namingSpec spec;
+        // "Carbon-subsuming" prefixes: the prefix name accounts for its own carbon atom
+        // (formyl/CHO, carboxy/COOH, chlorocarbonyl/COCl, carbamoyl/CON, cyano/C≡N).
+        // Unlike oxo/hydroxy/amino/etc, which only name heteroatoms hanging off a carbon
+        // the parent root already counted, these five's carbon is NOT counted by the root
+        // when the group sits off-chain. COOH/COCl/CON/C≡N cannot be renamed the way
+        // formyl->oxo is (their carbon genuinely doesn't belong on the parent chain), so
+        // when one of these appears on the chain as a non-principal group, the engine must
+        // refuse rather than emit a name with one carbon too many. See constructor guard
+        // just before ConstructName() is called.
+        private static readonly HashSet<string> CarbonSubsumingFormulae = new HashSet<string> { "COOH", "COCl", "CON", "C≡N" };
         public string[] names;
         private List<(List<int> chain, List<List<int>> branches)> allChainsAndBranches;
         private string suffixFormula;
@@ -104,6 +114,25 @@ namespace OrganicNamer.Core
                         {
                             NarrowDownChainsByPrefixes();
                         }
+                    }
+                }
+            }
+            // Reject rather than mis-name: a nitrile/amide/acyl chloride/carboxylic acid
+            // group on the chosen main chain that is NOT the principal characteristic
+            // group cannot be named as a substituent here — its carbon is not counted by
+            // the parent root, so any prefix name emitted for it would denote a molecule
+            // with one carbon too many. Renaming (as done for formyl -> oxo) isn't possible
+            // for these four because their carbon genuinely doesn't belong on the parent
+            // chain; shortening the chain is a larger refactor scheduled separately.
+            foreach ((List<int> chain, List<List<int>> _) in allChainsAndBranches)
+            {
+                foreach (FunctionalGroup group in groups)
+                {
+                    if (CarbonSubsumingFormulae.Contains(group.GroupFormula)
+                        && group.GroupFormula != suffixFormula
+                        && chain.IndexOf(group.MainIndex) != -1)
+                    {
+                        throw new Exception("A nitrile, amide, acyl chloride or carboxylic acid group that is not the principal group of the molecule cannot yet be named as a substituent");
                     }
                 }
             }
@@ -284,9 +313,20 @@ namespace OrganicNamer.Core
                 }
                 if (spec.endDependentPrefixOrSuffix.ContainsKey(group.GroupFormula))
                 {
+                    // By this point `group` is KNOWN to be on the main chain — the
+                    // `chain.IndexOf(group.MainIndex) == -1` guard above already skipped
+                    // groups on branch atoms. A carbonyl carbon that is on the chain is
+                    // counted by the parent root, so the correct prefix is always
+                    // `.middle.prefix` ("oxo"), whether or not the carbon sits at a
+                    // molecular end. `.end.prefix` ("formyl") only applies to a carbonyl
+                    // carbon that is NOT part of the parent chain (i.e. a substituent),
+                    // which this code path never sees. The two arms below therefore now
+                    // only differ in their suppression condition (whether the group is
+                    // the principal suffix at an end vs. in the middle) — not in the name
+                    // they produce, since FindSuffixCarbons owns naming the principal group.
                     if (atoms.IsAnEnd(group.MainIndex) && !(suffixIsEnd && group.GroupFormula == suffixFormula)) //group is on the end and isnt the same as the suffix one
                     {
-                        name = spec.endDependentPrefixOrSuffix[group.GroupFormula].end.prefix;
+                        name = spec.endDependentPrefixOrSuffix[group.GroupFormula].middle.prefix;
                     }
                     else if (!atoms.IsAnEnd(group.MainIndex) && !(suffixIsMiddle && group.GroupFormula == suffixFormula)) //group is in the middle and isnt the same as the suffix one
                     {
