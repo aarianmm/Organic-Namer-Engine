@@ -245,7 +245,6 @@
 {"id": "2707", "reference_name": "2,2,2-trichloroethane-1,1-diol", "names": ["2,2,2-trichloroethane-1,1-diol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
 {"id": "2723", "reference_name": "4-chloro-3,5-dimethylphenol", "names": ["4-chloro-3,5-dimethylphenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
 {"id": "2766", "reference_name": "4-aminobut-2-enoic acid", "names": ["4-aminobut-2-en-1-oic acid"], "strict_match": false, "normalised_match": true, "rule_applied": "terminal_group_locant_elision"}
-{"id": "2859", "reference_name": "7-oxabicyclo[4.1.0]heptane-2,3,4,5-tetrol", "names": ["1,2,3,4,5,6-hexahydroxycyclohexane"], "strict_match": false, "normalised_match": false, "rule_applied": null}
 {"id": "2879", "reference_name": "4-methylphenol", "names": ["4-methylphenol"], "strict_match": true, "normalised_match": true, "rule_applied": null}
 {"id": "2899", "reference_name": "cycloheptanamine", "names": ["aminocycloheptane"], "strict_match": false, "normalised_match": true, "rule_applied": "amine_prefix_suffix_convention"}
 {"id": "2903", "reference_name": "cyclooctanamine", "names": ["aminocyclooctane"], "strict_match": false, "normalised_match": true, "rule_applied": "amine_prefix_suffix_convention"}

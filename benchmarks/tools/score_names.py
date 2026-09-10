@@ -172,11 +172,17 @@ That defect has since been fixed in the engine, and the 17 split in two:
     rather than emitting a wrong name. They are absent from the scorable
     rows entirely, and the guard asserts that absence.
 
-HARD_MISMATCH_CIDS is therefore down to the single remaining case, CID
-2859: the engine emits the name of an unrelated hexahydroxycyclohexane for
-a bicyclic epoxide-tetrol input. That is a separate, still-open defect in
-ring-system routing, not a prefix error. No lexical rule in this file can
-turn it into a match; this is asserted in code below.
+HARD_MISMATCH_CIDS is therefore now empty. The 18th CID, 2859, was a
+separate defect: a bicyclic epoxide-tetrol whose bridging oxygen was
+misread by ring-system routing -- the engine treated the epoxide like an
+ordinary ether substituent instead of noticing its two attachment carbons
+were already part of the carbocycle, and emitted the name of an unrelated
+hexahydroxycyclohexane, silently dropping the epoxide. That routing check
+has since been fixed to reject a bridge whose own two carbons already
+close a ring, so CID 2859 is now REFUSED rather than misnamed and has
+moved into REFUSED_AFTER_FIX (6 CIDs). The engine has zero known genuine
+structural mismatches remaining on this corpus; this is asserted in code
+below.
 
 ===========================================================================
 KNOWN GAPS -- LEFT UNNORMALISED ON PURPOSE (not lexically fixable / not a
@@ -228,11 +234,11 @@ from typing import Callable, Optional
 # ---------------------------------------------------------------------------
 # CIDs independently confirmed (via OPSIN) to be genuine structural mismatches
 # that the normalised scorer must NEVER match. See the module docstring
-# section "THE GENUINE MISMATCHES" above for how this list got down to one.
+# section "THE GENUINE MISMATCHES" above for how this list got down to zero.
+# Kept as a set (rather than removed) so a future regression that reintroduces
+# a genuine mismatch has somewhere to go.
 # ---------------------------------------------------------------------------
-HARD_MISMATCH_CIDS = {
-    "2859",
-}
+HARD_MISMATCH_CIDS: set[str] = set()
 
 # Previously hard mismatches, fixed by the formyl -> oxo rename. These must now
 # MATCH (after Rule A locant elision). Asserted positively: a regression in the
@@ -255,9 +261,11 @@ FIXED_BUT_RETAINED_NAME = {
 
 # Previously hard mismatches, now refused outright: a non-principal
 # COOH/COCl/CONH2/C=N on the main chain has no valid substituent name. These
-# must be ABSENT from the scorable rows (status != "named").
+# must be ABSENT from the scorable rows (status != "named"). CID 2859 is the
+# odd one out here -- refused via the separate ring-routing fix (bicyclic
+# epoxide-tetrol), not the formyl/carbamoyl fix that produced the other five.
 REFUSED_AFTER_FIX = {
-    "48", "236", "738", "974", "5961",
+    "48", "236", "738", "974", "2859", "5961",
 }
 
 
@@ -615,7 +623,7 @@ def main(argv: Optional[list[str]] = None) -> int:
           f"mismatch(es) still unmatched, {len(FIXED_BY_OXO_RENAME)} "
           f"oxo-rename fixes still matching (+{len(FIXED_BUT_RETAINED_NAME)} "
           f"fixed but retained-name), {len(REFUSED_AFTER_FIX)} "
-          "non-principal carbon-subsuming cases still refused.")
+          "formerly-misnamed molecules still refused.")
     print(f"Wrote per-molecule results to {args.out_path}")
     return 0
 

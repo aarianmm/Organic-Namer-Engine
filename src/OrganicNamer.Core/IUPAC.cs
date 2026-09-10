@@ -60,7 +60,8 @@ namespace OrganicNamer.Core
             bool etherOnRing = bridgingAtoms.Count == 1
                 && cyclic
                 && atoms.Atoms[bridgingAtoms[0]].Symbol == "O"
-                && FindAcidCarbons(bridgingAtoms[0]).Count == 0;
+                && FindAcidCarbons(bridgingAtoms[0]).Count == 0
+                && !atoms.BridgeClosesARing(bridgingAtoms[0]);   // epoxide, oxa-bridge, fused oxolane
 
             // Early exit: bridging molecules (esters, ethers, amines) — skipped for
             // etherOnRing, which falls through to the cyclic path below instead.

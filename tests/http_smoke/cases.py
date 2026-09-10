@@ -1671,3 +1671,87 @@ def _butan_2_one():
     return a
 
 CASES["butan_2_one_regression"] = exact(payload(_butan_2_one()), "butan-2-one")
+
+# ── Epoxide / oxa-bridge fused to an all-carbon ring: routing fix regression ──
+# _heteroatom_ring above (Phase 3) covers a ring closed THROUGH a heteroatom
+# with no other ring present - SplitAtBridgingAtom's containment guard catches
+# those. These cases are that guard's blind spot: the bridging O's own two
+# attachment carbons are ALSO both members of an all-carbon ring (an epoxide
+# or oxa-bridge fused onto a carbocycle), which let them slip past
+# etherOnRing's routing check into the cyclic naming path and get silently
+# misnamed (e.g. CID 2859's epoxide-tetrol came out as
+# "1,2,3,4,5,6-hexahydroxycyclohexane", dropping the epoxide). The fix adds
+# !atoms.BridgeClosesARing(bridgingAtoms[0]) to that check, so these fall
+# through to the bridged path and hit the same "Rings containing a
+# heteroatom are not supported" guard as THF/ethylene oxide/pyrrolidine.
+
+def _cyclohexene_oxide():
+    """Epoxide fused to a carbocycle: O bridges two ADJACENT carbons of an
+    otherwise all-carbon six-ring (cyclohexene oxide, C1CCC2OC2C1)."""
+    a = carbon_ring(6)
+    o = add_atom(a, "O")
+    bond(a, 0, o)
+    bond(a, 1, o)
+    return a
+
+CASES["cyclohexene_oxide_should_reject"] = reject(payload(_cyclohexene_oxide()))
+
+def _epoxycyclohexane_bridged():
+    """1,4-oxa-bridge across a six-ring: O bridges two PARA (non-adjacent)
+    carbons of an all-carbon ring, forming a bicyclic bridge
+    (1,4-epoxycyclohexane, C1CC2CCC1O2) rather than a fused triangle."""
+    a = carbon_ring(6)
+    o = add_atom(a, "O")
+    bond(a, 0, o)
+    bond(a, 3, o)
+    return a
+
+CASES["epoxycyclohexane_bridged_should_reject"] = reject(payload(_epoxycyclohexane_bridged()))
+
+def _epoxide_tetrol_ring_first():
+    """CID 2859 shape: a six-carbon ring with an epoxide fused across one
+    edge and hydroxyls on the other four carbons. Ring carbons listed
+    before the oxygens in the atom list."""
+    a = carbon_ring(6)
+    o = add_atom(a, "O")
+    bond(a, 0, o)
+    bond(a, 1, o)                       # epoxide across ring edge 0-1
+    attach_atom(a, 2, "O")
+    attach_atom(a, 3, "O")
+    attach_atom(a, 4, "O")
+    attach_atom(a, 5, "O")
+    return a
+
+CASES["epoxide_tetrol_should_reject"] = reject(payload(_epoxide_tetrol_ring_first()))
+
+def _epoxide_tetrol_interleaved():
+    """Same molecule as _epoxide_tetrol_ring_first (same rings, same
+    substitution pattern), but with each hydroxyl oxygen interleaved right
+    after its ring carbon in the atom list instead of grouped at the end.
+    The original defect was atom-order dependent - the same molecule named
+    '1,2,3,4,5,6-hexahydroxycyclohexane' in one atom order and
+    '1,2,3,4-tetrahydroxycycloheptane' in another - so a single ordering
+    would not have caught both failure modes."""
+    a = new_atoms()
+    r0 = add_atom(a, "C")
+    attach_atom(a, r0, "O")             # OH on r0
+    r1 = add_atom(a, "C")
+    bond(a, r0, r1)
+    attach_atom(a, r1, "O")             # OH on r1
+    r2 = add_atom(a, "C")               # epoxide carbon A
+    bond(a, r1, r2)
+    r3 = add_atom(a, "C")               # epoxide carbon B
+    bond(a, r2, r3)
+    o = add_atom(a, "O")
+    bond(a, r2, o)
+    bond(a, r3, o)                      # epoxide bridges r2-r3
+    r4 = add_atom(a, "C")
+    bond(a, r3, r4)
+    attach_atom(a, r4, "O")             # OH on r4
+    r5 = add_atom(a, "C")
+    bond(a, r4, r5)
+    attach_atom(a, r5, "O")             # OH on r5
+    bond(a, r5, r0)                     # closes the six-membered ring
+    return a
+
+CASES["epoxide_tetrol_reordered_should_reject"] = reject(payload(_epoxide_tetrol_interleaved()))

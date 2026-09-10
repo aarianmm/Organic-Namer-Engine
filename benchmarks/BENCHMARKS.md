@@ -9,7 +9,8 @@ for the commands. Raw outputs are in `results/`.
 
 **Environment.** macOS 15.7.4, Apple Silicon (Arm64), 8 cores, .NET 10.0.9,
 Python 3.13 + RDKit 2026.03.6, OPSIN 2.9.0, Java 23. Engine at commit `62553da`
-plus the carbon-subsuming prefix fix described in §3.4.
+plus the carbon-subsuming prefix fix and the epoxide/oxa-bridge ring-routing
+fix, both described in §3.4.
 
 ---
 
@@ -18,18 +19,18 @@ plus the carbon-subsuming prefix fix described in §3.4.
 | Measure | Result |
 |---|---|
 | Structural round-trip accuracy, generated corpus | **100.00%** (49,988 / 49,988) |
-| Structural round-trip accuracy, real PubChem compounds | **99.70%** (332 / 333) |
+| Structural round-trip accuracy, real PubChem compounds | **100.00%** (332 / 332) |
 | Exhaustive alkane coverage, C₁–C₁₀ | **99.33%** (149 / 150 isomers) |
 | Name collisions across 635 distinct isomers | **0** |
-| Name agreement with PubChem — strict / convention-normalised | **34.83% / 94.29%** |
+| Name agreement with PubChem — strict / convention-normalised | **34.94% / 94.58%** |
 | Throughput, single-threaded | **12,375 molecules/s** (p50 24 µs, p99 929 µs) |
 | Distinct molecules nameable, ≤ 11 heavy atoms | **≥ 86,023,812** |
 | Distinct molecules nameable, acyclic family | **≥ 1.12 × 10²⁵** |
 
-Every name the engine emits for the 49,988 generated molecules it accepts denotes
-exactly the molecule it was given — verified by an independent parser, not by
-string comparison (§3.1). The single PubChem miss is a still-open ring-routing
-defect, not a naming error (§3.4).
+Every name the engine emits — across both the 49,988 generated molecules it
+accepts and the 332 real PubChem compounds it accepts — denotes exactly the
+molecule it was given, verified by an independent parser, not by string
+comparison (§3.1). There are no known false accepts on either corpus (§3.4).
 
 ---
 
@@ -149,15 +150,17 @@ any one of them resolves correctly.
 | Corpus | Molecules | Round-trip match | OPSIN parse failures |
 |---|---:|---:|---:|
 | Generated from the grammar | 49,988 | **100.00%** (49,988) | 0 |
-| Real compounds (PubChem CIDs 1–6000) | 333 | **99.70%** (332) | 0 |
+| Real compounds (PubChem CIDs 1–6000) | 332 | **100.00%** (332) | 0 |
 
 Zero parse failures on 50,382 generated names is itself a result: every name the
 engine produced was well-formed enough for an independent parser to read.
 
 The generated corpus is exhaustive over the engine's own grammar, so 100% here
 means something specific: for every molecule the engine accepts, the name it
-emits resolves back to that exact molecule. The one PubChem miss is the epoxide
-false accept in §3.4, which is a ring-routing defect rather than a naming one.
+emits resolves back to that exact molecule. The PubChem corpus now round-trips
+at 100% too — the epoxide false accept described in §3.4 was a ring-routing
+defect, since fixed, and there are no known false accepts left on either
+corpus.
 
 ### 3.2 Exhaustive alkane coverage
 
@@ -184,8 +187,8 @@ plausible strings.
 
 | Comparison | Matches |
 |---|---:|
-| Strict exact string | 116 / 333 = **34.83%** |
-| After convention normalisation | 314 / 333 = **94.29%** |
+| Strict exact string | 116 / 332 = **34.94%** |
+| After convention normalisation | 314 / 332 = **94.58%** |
 
 The gap is almost entirely one habit: the engine never elides a locant that IUPAC
 treats as redundant, writing `butan-1-al` for `butanal` and `hexane-1,6-dioic
@@ -196,8 +199,8 @@ normalised matches; a retained-name alias table (`ethanoic acid` ↔ `acetic aci
 Normalisation is purely lexical and table-driven — never structural, never
 fuzzy-matched — and is verified not to mask any genuine error that §3.1
 identified independently. `score_names.py` asserts this three ways and fails if
-any of them breaks: the one remaining genuine mismatch must stay unmatched, the
-twelve names fixed by the `oxo` rename must stay correct, and the five molecules
+any of them breaks: the set of known genuine mismatches must stay empty, the
+twelve names fixed by the `oxo` rename must stay correct, and the six molecules
 the engine now refuses must stay refused. The residual 5.71% is dominated by
 retained trivial names the alias table does not carry — `oxaldehydic acid` for
 the engine's (structurally correct) `2-oxoethan-1-oic acid`, for instance. Those
@@ -255,17 +258,42 @@ post-fix measurements; the 97 failures analysed above no longer occur, and the
 five molecules that can no longer be named are reflected in the reduced corpus
 sizes (49,988 generated, 333 PubChem).
 
-**The epoxide false accept remains open** and is the single outstanding accuracy
-defect. It is a ring-routing bug — a bridged bicyclic slipping through the
-fused/bridged ring guard — not a prefix error, and needs a separate fix.
+**The epoxide false accept has since been fixed.** Its root cause was a routing
+test, `etherOnRing` in `IUPAC.cs`, added so molecules like `methoxycyclohexane`
+reach the cyclic naming path: it checked that a carbon ring existed and that
+the bridge was an oxygen, but never that the bridge's own two attachment
+carbons sat on that ring. For a genuine ether they don't; for an epoxide, or
+any oxa-bridge across a ring, they do — and `etherOnRing` routed those around a
+guard that already existed for exactly this shape. That guard lives in
+`SplitAtBridgingAtom` (`ElementGraph.cs`), whose comment calls itself "the ONLY
+place they are caught," because `IsCyclic()` only walks the carbon subgraph and
+cannot see a ring closed through a heteroatom. The fix adds one conjunct,
+`!atoms.BridgeClosesARing(...)`, to `etherOnRing`, so these molecules fall
+through to the bridged path and hit that guard instead. No new error message;
+the diff is 15 lines added, 1 changed.
+
+Three shapes were affected, with two visibly different corruptions depending on
+input atom order:
+
+| SMILES | Was named |
+|---|---|
+| `C1CCC2OC2C1` (cyclohexene oxide) | `cycloheptane` — the bridge oxygen absorbed into the ring and counted as a carbon |
+| `C1CC2CCC1O2` (1,4-epoxycyclohexane) | `1,4-dihydroxycyclohexane` — the single bridging oxygen read as two independent hydroxyls |
+| `C1(C(C(C2C(C1O)O2)O)O)O` (PubChem CID 2859) | `1,2,3,4,5,6-hexahydroxycyclohexane` |
+
+All three now hit the same clean rejection as any other ring closed through a
+heteroatom: `ChemistryError: Rings containing a heteroatom are not supported`.
+CID 2859 is the molecule that drops the PubChem-named count elsewhere in this
+document from the 333 quoted earlier in this section to 332. **There are no
+known false accepts on either corpus.**
 
 ### 3.5 Scope discrimination
 
-Of 4,747 PubChem compounds converted successfully, the engine named 333 (7.0%)
-and refused 4,414. A low acceptance rate is the intended behaviour, not a
+Of 4,747 PubChem compounds converted successfully, the engine named 332 (7.0%)
+and refused 4,415. A low acceptance rate is the intended behaviour, not a
 weakness — the supported vocabulary is deliberately A-level-sized, and the design
 rule is to refuse anything outside it rather than guess. The count that matters
-is that refusals are *clean*: every one of the 4,414 came back as a caught
+is that refusals are *clean*: every one of the 4,415 came back as a caught
 `ChemistryError`, with no crashes, hangs, or silently wrong names.
 
 Five of those refusals are new, and are a deliberate trade: a non-principal
@@ -274,9 +302,12 @@ this level of the grammar, so the engine refuses instead of guessing. Recovering
 them requires excluding those carbons from chain selection, which is a separate
 piece of work.
 
-A caveat worth stating: this benchmark can measure false accepts (§3.4 found one,
-still open) but cannot cheaply measure false *rejects*, since that would need a
-ground-truth label for whether each of the 4,414 is genuinely out of scope.
+A caveat worth stating: this benchmark can measure false accepts — §3.4 found
+one, and it is now fixed, so the count stands at zero — but cannot cheaply
+measure false *rejects*, since that would need a ground-truth label for whether
+each of the 4,415 is genuinely out of scope. That fix is also why the refused
+count here is one higher than in earlier measurements: CID 2859 (§3.4) now
+refuses cleanly instead of round-tripping to a wrong name.
 
 ---
 
