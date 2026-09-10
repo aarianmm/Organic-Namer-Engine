@@ -42,20 +42,28 @@ More than one bridging heteroatom → reject outright.
 - Straight and branched alkanes/alkenes/alkynes, **1–10 carbons in the main chain**.
 - Correct chain selection: longest → most suffix groups → lowest suffix locants → lowest
   ene/yne locants → lowest prefix locants. Ties emit multiple names.
-- Principal groups, in priority order (suffix when highest, prefix otherwise):
+- Principal groups, in priority order. Most take a prefix form when they are not the
+  highest-priority group present, but `COOH`/`COCl`/`CONH₂`/`C≡N` are suffix-only: on the
+  chain path they may only appear as the principal group's suffix, and a molecule carrying
+  one of them elsewhere on the main chain is rejected (see Rejected, below).
 
   | Group | Suffix | Prefix |
   |---|---|---|
-  | `COOH` | -oic acid | carboxy |
-  | `COCl` | -oyl chloride | chlorocarbonyl |
-  | `CONH₂` | -amide | carbamoyl |
-  | `C≡N` | -nitrile | cyano |
-  | `CHO` (chain end) | -al | formyl |
+  | `COOH` | -oic acid | suffix only — non-principal instance on the chain is rejected |
+  | `COCl` | -oyl chloride | suffix only — non-principal instance on the chain is rejected |
+  | `CONH₂` | -amide | suffix only — non-principal instance on the chain is rejected |
+  | `C≡N` | -nitrile | suffix only — non-principal instance on the chain is rejected |
+  | `CHO` (chain end) | -al | oxo |
   | `C=O` (mid-chain) | -one | oxo |
   | `–OH` | -ol | hydroxy |
   | `–SH` | -thiol | sulfanyl |
   | `–NH₂` | -amine | amino |
   | `=NH` | -imine | imino |
+
+  A non-principal chain carbonyl (`CHO` or `C=O`) is always named `oxo`, never `formyl` —
+  the carbon is already counted by the parent chain, so a prefix that counts it again would
+  denote the wrong molecule. `formyl` remains the correct prefix for an off-chain carbonyl,
+  i.e. one sitting on a substituent tip (see Substituent grammar, below).
 
 - Prefix-only groups: **fluoro, chloro, bromo, iodo, nitro**.
 - Multiplying prefixes di–nona (up to 9 identical groups/substituents).
@@ -78,6 +86,7 @@ one functional group on the spine tip **or** methyl-only branches — never both
 | Groups on non-tip branch carbons | not modelled |
 | Two or more groups on one branch tip (`–CF₃`, `–CHCl₂`) | not modelled |
 | A branch tip carrying `COOH`/`COCl`/`CONH₂`/`C≡N` | prefix would double-count the tip carbon |
+| A non-principal `COOH`/`COCl`/`CONH₂`/`C≡N` elsewhere on the main chain | prefix would double-count that carbon; e.g. `NC(=O)CCC(=O)C(=O)O` — the acid wins as principal group, the amide can't be expressed |
 | Unsaturated substituents | not modelled |
 | Cyclic substituents (cyclohexyl-, biphenyl-) | not modelled |
 | ≥10 identical substituents | no multiplying prefix |
@@ -93,9 +102,23 @@ Exactly **one** all-carbon ring. Ring size follows the root names (up to 10).
 - `cyclopropane` … `cyclodecane`, with any G1-nameable substituents:
   alkyl, branched alkyl, halo, hydroxy, amino, nitro, alkoxy, `(hydroxymethyl)`, etc.
 - Lowest-locant ring numbering with alphabetical tiebreak.
-- **Rejected:** C=C or C≡C in the ring (cyclohexene), ring ketones (cyclohexanone —
-  the C=O attaches by a double bond), fused/bridged/spiro systems, rings containing a
-  heteroatom (THF, epoxides, pyrrolidine, lactones), two separate rings.
+- **No carbon-based principal group is nameable on a non-aromatic ring.** There are
+  no retained parents outside benzene, so every suffix-capable carbon group on a
+  saturated ring is refused rather than named:
+
+  | Shape | Example | Refusal |
+  |---|---|---|
+  | ring aldehyde | cyclohexanecarbaldehyde | `No prefix name available for group 'C=O'` |
+  | ring ketone | cyclohexanone | `Substituents attached by a multiple bond…` |
+  | ring acid / nitrile / amide | cyclohexanecarboxylic acid, cyclohexanecarbonitrile, cyclohexanecarboxamide | `Substituents containing carbon-based functional groups…` |
+
+  Contrast the aromatic path, which names all of these via retained parents
+  (`benzaldehyde`, `benzoic acid`, `benzonitrile`, `benzamide`). `–OH` and `–NH₂`
+  are the exception on both paths: they are plain prefixes, so `hydroxycyclohexane`
+  and `aminocyclohexane` name normally.
+- **Rejected:** C=C or C≡C in the ring (cyclohexene), fused/bridged/spiro systems,
+  rings containing a heteroatom (THF, epoxides, pyrrolidine, lactones), two separate
+  rings.
 
 ### Aromatic rings (benzene only)
 
